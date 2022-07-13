@@ -1,0 +1,8 @@
+ORI/*
+TOGET/*
+*.nc
+*.png
+*.so
+*.pyf
+TRAINING/*.nc 
+TRAINING/*.so
