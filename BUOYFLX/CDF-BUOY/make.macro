@@ -1,0 +1,27 @@
+# Makefile for CDFTOOLS
+#    $Rev$
+#    $Date$
+# --------------------------------------------------------------
+#
+export NFCONFIGFLIBS=`nf-config --flibs`
+export NFCONFIGFLAGS=`nf-config --fflags`
+
+NC4= -D key_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+ 
+F90=ifort
+MPF90=mpif90
+OMP=
+#OMP=-openmp
+#FFLAGS= -O  $(NFCONFIGFLAGS) $(NFCONFIGFLIBS) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+FFLAGS= -O  $(NFCONFIGFLAGS) $(NFCONFIGFLIBS) $(NC4) $(CMIP6) -assume byterecl -convert big_endian  $(OMP)
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man
+
+
+
+
+
