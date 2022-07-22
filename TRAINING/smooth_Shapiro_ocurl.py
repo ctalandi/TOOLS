@@ -16,16 +16,18 @@ print (shapiro.lisshapiro1d.__doc__)
 dsgrd=xr.open_dataset('/data0/project/drakkar/CONFIGS/CREG12.L75/GRID/CREG12.L75-REF08_mask.nc')
 
 # When using the fmask, need to convert the lateral condition (i.e. no-slip) from a value of 2 to 1 
-mskm1=np.array(dsgrd['fmask'][0,0,:,:].squeeze().T)
-msk=np.where(mskm1 == 2. , 1., mskm1 )
-msk_condition1 = np.array(dsgrd['fmask'][0,0,:,:].squeeze())
-msk_condition2 = np.where(msk_condition1 == 2. , 1., msk_condition1 )
+#   mskm1=np.array(dsgrd['fmask'][0,0,:,:].squeeze().T)
+#   msk=np.where(mskm1 == 2. , 1., mskm1 )
+#   msk_condition1 = np.array(dsgrd['fmask'][0,0,:,:].squeeze())
+#   msk_condition2 = np.where(msk_condition1 == 2. , 1., msk_condition1 )
+msk=np.array(dsgrd['tmask'][0,0,:,:].squeeze().T)
+msk_condition1 = np.array(dsgrd['tmask'][0,0,:,:].squeeze())
 
-print('fmask 3D max:',np.max(msk))
-print('fmask 3D min:',np.min(msk))
+print('tmask 3D max:',np.max(msk))
+print('tmask 3D min:',np.min(msk))
 
-print('fmask 2D max:',np.max(msk_condition2))
-print('fmask 2D min:',np.min(msk_condition2))
+print('tmask 2D max:',np.max(msk_condition1))
+print('tmask 2D min:',np.min(msk_condition1))
 
 path_curl = '/data0/project/drakkar/CONFIGS/CREG12.L75/CREG12.L75-REF08-S/DIAGS/REL-VORT/'
 #path_curl = '/data0/project/drakkar/USERS/cassianides/creg12/contribution_icurl/'
@@ -36,7 +38,7 @@ ylist = [2015]
 #ylist = [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015]
 
 wnd_shap=False # To treat a 2D wind field
-ice_shap=True  # To treat a 2D ice field
+ice_shap=False  # To treat a 2D ice field
 
 for i in ylist:
 	for j in index_files :
