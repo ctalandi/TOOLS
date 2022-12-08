@@ -1,0 +1,94 @@
+#!/bin/bash
+#PBS -l mem=2g
+#PBS -l walltime=00:20:00
+#PBS -N DFS5.2_interp
+#PBS -eo 
+set -x
+
+ulimit -S -s unlimited
+
+source /usr/share/Modules/3.2.10/init/bash
+module purge 
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+
+############ ENV ############
+#Path where binairies are located
+BINDIR=/home1/datawork/ctalandi/WTOOLS/tools/WEIGHTS
+#############################
+
+##############################################################################
+##############################################################################
+############################## USER'S CHOICE 
+# Interpolation type: bilin/bicub
+##################################
+
+CONFIG=CREG025.L75
+# Set with one of the following list: u10 v10 t2 q2 radsw radlw precip or snow
+GTYPE=radsw 
+# Set the forcing name (related to namelists names)
+FORG=dfs5.2
+
+# Set the year to be interpolated
+PERIOD=2000
+# Set the path to access the files to interpolated
+DFS52DIR=/home/datawork-lops-drakkarcom/DATA-REFERENCE/DFS5.2_RD/ALL
+
+FILE=drowned_${GTYPE}_DFS5.2_y${PERIOD}.nc
+############################## END OF USER'S CHOICE ##########################
+##############################################################################
+##############################################################################
+
+# Move into the directory from where the current job has been submitted
+cd $PBS_O_WORKDIR
+
+# For only u10 & v10 variables activate bi-cubic interpolation
+# For all others scalars variables activate bi-linear interpolation
+INTERP_TYPE=bilinear
+if [ $GTYPE == 'u10' ] || [  $GTYPE == 'v10' ] ; then INTERP_TYPE=bicubic ; fi 
+SHORT_INTERP=$( echo $INTERP_TYPE | cut -c 1-5 )
+
+# Create a specific working directory
+if [ ! -d DFS52-INTERP-${INTERP_TYPE}-${GTYPE} ] ; then mkdir DFS52-INTERP-${INTERP_TYPE}-${GTYPE}; fi
+cd DFS52-INTERP-${INTERP_TYPE}-${GTYPE}
+
+# Link to input basic required files 
+ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/RUNS/CREG025.L75/CREG025.L75-I/CREG025.L75_domain_cfg.nc coordinates.nc
+ln -sf ${DFS52DIR}/${FILE} .
+
+
+# Set information depending on the variable considered 
+if [ $GTYPE == 'u10' ] ; then
+   LUNIT='m/s'  ; LTIME="hours"
+elif [ $GTYPE == 'v10' ]  ; then
+   LUNIT='m/s'  ; LTIME="hours"
+elif [ $GTYPE == 't2' ]  ; then
+   LUNIT='K'  ; LTIME="hours"
+elif [ $GTYPE == 'q2' ]  ; then
+   LUNIT='kg/kg'  ; LTIME="hours"
+elif [ $GTYPE == 'radsw' ]  ; then
+   LUNIT='W/m2'  ; LTIME="days"
+elif [ $GTYPE == 'radlw' ]  ; then
+   LUNIT='W/m2'  ; LTIME="days"
+elif [ $GTYPE == 'precip' ]  ; then
+   LUNIT='kg/m2/s'  ; LTIME="days"
+elif [ $GTYPE == 'snow' ]  ; then
+   LUNIT='kg/m2/s'  ; LTIME="days"
+fi
+
+
+sed -e "s/<XXINFILEXX>/${FILE}/" \
+    -e "s/<XXINVARXX>/${GTYPE}/"  \
+    -e "s/<XXPERIODXX>/${PERIOD}/" \
+    -e "s/<<XXTAXISXX>>/${LTIME}/" \
+    -e "s@<XXUNITSXX>@${LUNIT}@"  /home1/datahome/ctalandi/2SHARE/4EMMA/DFS5.2-INTERPOLATION/namelist_${SHORT_INTERP}_${FORG}_tmp > namelist_${SHORT_INTERP}_${FORG}
+
+
+###################################################################################################
+# THE INTERPOLATION STEP
+# To build the weight files 
+${BINDIR}/scripgrid.exe namelist_${SHORT_INTERP}_${FORG} 
+${BINDIR}/scrip.exe namelist_${SHORT_INTERP}_${FORG}
+${BINDIR}/scripshape.exe namelist_${SHORT_INTERP}_${FORG} 
+
+# To interpolate the field based on weight files resulting from the previous step
+${BINDIR}/scripinterp.exe namelist_${SHORT_INTERP}_${FORG} 
