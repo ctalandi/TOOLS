@@ -1,0 +1,97 @@
+#!/bin/bash
+#PBS -l mem=115g
+#PBS -e ./JOBS/era5_<XXYEARXX>_<XXVARGRDXX>_drown.err
+#PBS -o ./JOBS/era5_<XXYEARXX>_<XXVARGRDXX>_drown.out
+#PBS -l walltime=06:00:00
+#PBS -N ERA5_<XXYEARXX><XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+
+#For last SOSIE module load NETCDF-test/4.3.3.1-impi-intel2018
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+set -x
+
+YS=<XXYEARXX>
+YE=<XXYEARXX>
+
+DATAINI="/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES/"
+DAWORK="/home1/scratch/ctalandi/PREPOST/ERA5-DROWN"
+DATAOUT="/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES_DROWNED/"
+
+if [ ! -d ${DAWORK} ] ; then mkdir ${DAWORK} ; fi 
+
+cd ${DAWORK}
+
+listvar="<XXVARGRDXX>"
+tgt_grid="CREG025.L75-NEMO420_mesh_mask.nc"
+dom_grid="CREG025.L75_domain_cfg.nc"
+
+# Loop over years 
+for year in `seq $YS $YE `; do 
+
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	cd ${year}
+
+	if [ ! -d ${DATAOUT}/${year} ] ; then mkdir ${DATAOUT}/${year} ; fi 
+
+	# Loop over all variables 
+	for gtype in `echo ${listvar} ` ; do
+	
+		zjplev=1 # only the surface interpolation to perform
+	        if [ $gtype == 'u10' ] ; then
+	           svar='u10' ; zmin=-50. ; zmax=50.
+	        elif [ $gtype == 'v10' ]  ; then 
+	           svar='v10' ; zmin=-50. ; zmax=50.
+	        elif [ $gtype == 't2m' ]  ; then 
+	           svar='t2m' ; zmin=200. ; zmax=400.
+	        elif [ $gtype == 'd2m' ]  ; then 
+	           svar='d2m' ; zmin=200. ; zmax=400.
+	        elif [ $gtype == 'msl' ]  ; then 
+	           svar='msl' ; zmin=90000. ; zmax=110000.
+	        elif [ $gtype == 'mtpr' ]  ; then 
+	           svar='mtpr' ; zmin=-0.01 ; zmax=0.01
+	        elif [ $gtype == 'msr' ]  ; then 
+	           svar='msr' ; zmin=0. ; zmax=0.1
+	        elif [ $gtype == 'msdwlwrf' ]  ; then 
+	           svar='msdwlwrf' ; zmin=0. ; zmax=600.
+	        elif [ $gtype == 'msdwswrf' ]  ; then 
+	           svar='msdwswrf' ; zmin=-50. ; zmax=500.
+		else 
+	           echo "Case does not exist " 
+		   exit
+	        fi
+
+		if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+		cd ${gtype}
+
+		#ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${tgt_grid} .
+		#ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${dom_grid} .
+		ln -sf /home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/LAND-MSK/lsm_T720_era5_LB.nc .
+		ln -sf /home1/datahome/ctalandi/DEV/sosie-2.6.4/bin/mask_drown_field.x .
+
+
+		# Set an unilimited time axis, required by Sosie
+		if [ ! -f input_field.nc ] ; then 
+			ncks --mk_rec_dmn time ${DATAINI}/${year}/ERA5_${svar}_y${year}.nc   input_field.nc
+		fi
+	        
+		time ./mask_drown_field.x -i input_field.nc -v ${svar} -D \
+		                          -x longitude  -y latitude -t time \
+                              -m lsm_T720_era5_LB.nc -q lsm -p 0 -l "${zmin}" -u "${zmax}" \
+			                        -g 100 -o  ERA5_${svar}_drwnd_y${year}.nc 
+
+		ls -lrth
+
+		rsync -lrt  --progress ERA5_${svar}_drwnd_y${year}.nc  ${DATAOUT}/${year}/.
+
+	done
+
+	cd ../
+
+done 
+
+cd ../
