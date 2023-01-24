@@ -1,0 +1,46 @@
+#!/bin/bash 
+#PBS  -l mem=115g
+#PBS -e ./JOBS/W10.err
+#PBS -o ./JOBS/W10.out
+#PBS -l walltime=06:00:00
+#PBS -N W10_<XXYEARXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+
+module purge 
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+module list 
+
+set -x 
+year=<XXYEARXX>
+DATADIR=/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES_DROWNED/ALL
+DATAOUT=/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES_DROWNED/ALL
+prefix=ERA5
+suffix=drwnd
+lvar=<XXVARGRDXX>
+WKDIR=$SCRATCH/TMPCLIMATO/${lvar}
+#-----------------------------------------------------
+mkdir -p $WKDIR
+
+
+cd $WKDIR
+ln -sf /home1/datahome/ctalandi/DEV/FORCING_TOOLS/CLIMATO/bin/mkw10.x  .
+ln -sf /home1/datahome/ctalandi/DEV/FORCING_TOOLS/CLIMATO/bin/mkmodxu.x  .
+
+for y in $(seq $year $year) ; do
+	ln -sf $DATADIR/${prefix}_u10_${suffix}_y${year}.nc .
+	ln -sf $DATADIR/${prefix}_v10_${suffix}_y${year}.nc .
+done
+
+for y in $(seq $year $year) ; do
+   echo $y
+   # build w10 and Wu, Wv
+   mkw10.x   -y $y -set ${suffix} -lon longitude -lat latitude -time time -prefix ${prefix}_
+   mkmodxu.x -y $y -set ${suffix} -lon longitude -lat latitude -time time -prefix ${prefix}_
+done
+
+rsync -lrt  ${prefix}_w10_${suffix}_y${year}.nc    ${DATAOUT}/.
+rsync -lrt  ${prefix}_wu10_${suffix}_y${year}.nc   ${DATAOUT}/.
+rsync -lrt  ${prefix}_wv10_${suffix}_y${year}.nc   ${DATAOUT}/.

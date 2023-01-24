@@ -1,0 +1,65 @@
+#!/bin/bash 
+#PBS  -l mem=115g
+#PBS -e ./JOBS/clim_<XXVARGRDXX>.err
+#PBS -o ./JOBS/clim_<XXVARGRDXX>.out
+#PBS -l walltime=02:30:00
+#PBS -N clim_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+
+module purge 
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+module list
+
+set -x 
+year1="<XXYEAR1XX>"
+year2="<XXYEAR2XX>"
+DATADIR=/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES_DROWNED/ALL/
+prefix=ERA5
+suffix=drwnd
+lvar="<XXVARGRDXX>"
+WKDIR=$SCRATCH/TMPCLIMATO/${lvar}
+CLIMATODIR=/home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/ROOT-FILES_DROWNED/CLIMATO_${year1}-${year2}
+#-----------------------------------------------------
+# function for building the list of file for a given type for a range of years
+mklist() {
+     typ=$1
+     y1=$2
+     y2=$3
+     lst=''
+   for y in $(seq $y1 $y2 ) ; do
+     lst="$lst $( ls *${typ}_*y${y}.nc) "
+   done
+         }
+#-----------------------------------------------------
+mkdir -p $WKDIR/TMP
+mkdir -p $CLIMATODIR
+
+
+cd $WKDIR
+ln -sf /home1/datahome/ctalandi/DEV/FORCING_TOOLS/CLIMATO/bin/mkclimato.x  .
+
+for y in $(seq $year1 $year2) ; do
+	ln -sf $DATADIR/ERA5_${lvar}_drwnd_y${y}.nc .
+done
+
+# Daily climatology of the variable
+for var in `echo ${lvar} ` ; do
+
+	mklist ${var} $year1 $year2
+	mkclimato.x $lst
+	  mv climato.nc TMP/ERA5_${var}_${suffix}_y0000.nc
+	  rsync -lrt TMP/ERA5_${var}_${suffix}_y0000.nc $CLIMATODIR/.
+	  rsync -lrt climato-f.nc $CLIMATODIR/ERA5_${var}_LANCZ10_${suffix}_y0000.nc
+done
+
+# hanning filtering
+cd TMP
+ln -sf /home1/datahome/ctalandi/DEV/FORCING_TOOLS/CLIMATO/bin/mkonlyhanning.x  .
+
+for var in `echo ${lvar} ` ;  do
+  mkonlyhanning.x ERA5_${var}_${suffix}_y0000.nc 2
+  rsync -lrt climato-hann2.nc $CLIMATODIR/ERA5_${var}_HANN2_${suffix}_CLIM_0001.nc
+done

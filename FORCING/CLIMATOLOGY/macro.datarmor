@@ -1,0 +1,8 @@
+
+export NFCONFIGFLIBS=`nf-config --flibs`
+export NFCONFIGFLAGS=`nf-config --fflags`
+
+F90=ifort 
+FFLAGS= -O3 -O $(NFCONFIGFLAGS) $(NFCONFIGFLIBS)  -fp-model precise
+INSTALL=/home1/datahome/ctalandi/DEV/FORCING_TOOLS/CLIMATO/bin
+
