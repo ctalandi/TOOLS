@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -q ftp
+#PBS -l select=1:ncpus=1:mem=20gb
+#PBS -l walltime=02:30:00
+#PBS -N G12_snap
+#PBS -S /bin/bash 
+
+# cd to the directory you submitted your job
+cd $PBS_O_WORKDIR
+qstat -f $PBS_JOBID
+echo $HOST
+pbsnodes $HOST
+#source /usr/share/Modules/3.2.10/init/bash
+
+. /appli/anaconda/versions/4.8.3/etc/profile.d/conda.sh
+
+conda activate EnvGlorys12V1_MIO
+
+#DOM="BERING"
+#DOM="SUBPOLARGYRE"
+DOM="SUBTROPGYRE"
+
+if [ ${DOM} == "BERING" ]       ; then sDOM="BER" ; fi
+if [ ${DOM} == "SUBPOLARGYRE" ] ; then sDOM="SPG" ; fi
+if [ ${DOM} == "SUBTROPGYRE" ]  ; then sDOM="STG" ; fi
+
+
+time ipython get_glorys12v1_daily_snap.py ${sDOM}
+
+

@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -q ftp
+#PBS -l select=1:ncpus=1:mem=20gb
+#PBS -l walltime=04:30:00
+#PBS -N <XXSHAREXX><XXCYEARXX><XXFTYPEXX>
+#PBS -S /bin/bash 
+
+# cd to the directory you submitted your job
+cd $PBS_O_WORKDIR
+qstat -f $PBS_JOBID
+echo $HOST
+pbsnodes $HOST
+#source /usr/share/Modules/3.2.10/init/bash
+
+. /appli/anaconda/versions/4.8.3/etc/profile.d/conda.sh
+
+conda activate EnvGlorys12V1_MIO
+
+DOM="<XXDAREAXX>"
+T_Y=<XXCYEARXX>
+
+OUTDIR=/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/INIT
+
+if [ $DOM == "BER" ] ; then sDOM=BERING ; fi 
+if [ $DOM == "SPG" ] ; then sDOM=SUBPOLARGYRE ; fi 
+if [ $DOM == "STG" ] ; then sDOM=SUBTROPGYRE ; fi 
+
+if [ ! -d ${OUTDIR}/${sDOM}/${T_Y} ]  ; then mkdir ${OUTDIR}/${sDOM}/${T_Y} ; fi
+
+# For the BER area, retrieve monthly data set in 1 file for all variables
+if [ $DOM == "BER" ] ; then 
+        for TYP in `echo <XXFTYPEXX> ` ; do  
+		sed -e "s/XXXgrd/${TYP}/" ../get_glorys12v1_monthly.py  > get_glorys12v1_monthly_${DOM}_y${T_Y}_${TYP}.py
+		time ipython get_glorys12v1_monthly_${DOM}_y${T_Y}_${TYP}.py ${T_Y} BER 
+	done 
+fi
+
+# For the STG area, retrieve monthly data set for SSH only in 1 file and daily for other variables 
+if [ $DOM == "STG" ] ; then 
+        for TYP in `echo <XXFTYPEXX> ` ; do 
+                if [ $TYP == 'grd2D' ] ; then 
+			sed -e "s/XXXgrd/${TYP}/" ../get_glorys12v1_monthly.py  > get_glorys12v1_monthly_${DOM}_y${T_Y}_${TYP}.py
+			time ipython get_glorys12v1_monthly_${DOM}_y${T_Y}_${TYP}.py ${T_Y} STG
+		else 
+			sed -e "s/XXXgrd/${TYP}/" ../get_glorys12v1_daily.py  > get_glorys12v1_daily_${DOM}_y${T_Y}_${TYP}.py
+			time ipython get_glorys12v1_daily_${DOM}_y${T_Y}_${TYP}.py ${T_Y} STG
+		fi
+	done
+fi
+
