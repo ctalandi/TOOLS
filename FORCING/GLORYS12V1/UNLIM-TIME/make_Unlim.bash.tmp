@@ -1,0 +1,46 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/SuTr_<XXYEARXX>_<XXVARGRDXX>_Unlim.err
+#PBS -o ./JOBS/SuTr_<XXYEARXX>_<XXVARGRDXX>_Unlim.out
+#PBS -l walltime=01:45:00
+#PBS -N <XXSBDMXX>Un_<XXYEARXX>_<XXSHVARXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+set -x
+
+S_YEAR=<XXYEARXX>
+E_YEAR=<XXYEARXX>
+
+LVAR=<XXVARGRDXX>
+
+TDOM=<XXSBDMXX>
+
+# Default area
+area=BERING   fext=Bering
+if [ "${TDOM}" == "STG"  ] ; then 
+	area=SUBTROPGYRE  ; fext=SubTrop
+fi 
+
+cd /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/INIT/${area}
+
+for year in `seq $S_YEAR $E_YEAR `; do 
+
+	cd ${year}
+
+	DATAOU="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/${area}/${year}/"
+	if [ ! -d ${DATAOU} ] ; then mkdir ${DATAOU} ; fi 
+
+	for file in `ls *${LVAR}.nc `; do 
+	
+		tag=`echo ${file} | awk -F_ '{print $2 }' `
+		ncks -O --mk_rec_dmn time_counter $file -o ${DATAOU}/extGLORYS12V1-${fext}_${tag}_${LVAR}.nc
+	
+	done 
+
+	cd ../
+done 
