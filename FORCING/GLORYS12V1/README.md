@@ -47,6 +47,7 @@ get_glorys12v1_daily_snap.py > set the tag list by hand in this script and speci
 
 ### Set an unlimited time record: 
 Since few problems occur when submitting a job, this is done in an interactive way. <br>
+It is done from there: /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/INIT/UNLIM-TIME <br>
 It relies on the  *ncks -O --mk_rec_dmn time_counter ....* NCO command 
 
 
