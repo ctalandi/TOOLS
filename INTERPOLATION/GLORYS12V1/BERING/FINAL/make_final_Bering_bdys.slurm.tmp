@@ -1,0 +1,92 @@
+#!/bin/bash
+######PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_ext.err
+#PBS -o ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_ext.out
+#PBS -l walltime=00:30:00
+#PBS -N BerEx_<XXYEARXX>_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+#module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+set -xv
+
+YS=<XXYEARXX>
+YE=<XXYEARXX>
+AREA=BERING
+LOC="/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/BERING/FINAL"
+
+NCKS="ncks"
+OPT="-O -F "
+
+DATAINI="/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/BERING/INTERP/"
+
+cd ${LOC}
+if [ ! -d OPERATE ] ; then mkdir -p OPERATE  ; fi
+cd OPERATE
+
+if [ ${AREA} == 'BERING' ] ; then 
+	listvar="<XXVARGRDXX>"
+	b_ext="GLORYS12V1-CREG12.L75"
+fi
+
+# Loop over years 
+for year in `seq $YS $YE `; do 
+
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	cd ${year}
+
+	DATAOUT=/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/${AREA}/${year}
+	if [ ! -d ${DATAOUT} ] ; then mkdir -p ${DATAOUT}  ; fi
+
+	# Loop over all files 
+	for gtype in `echo ${listvar} ` ; do
+
+		if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi
+		cd ${gtype}
+	
+		# FORTRAN INDICES
+		# Default indices for both T & U grid points
+		### Based on EORCA12-MJMgd16 exp i1="96"  ;  i2="241" 
+		### Based on EORCA12-MJMgd16 exp j1="2"   ;  j2="11" 
+		i1="18"  ;  i2="59" 
+		j1="2"   ;  j2="11" 
+
+	        # NONO STUPOID !!!! if [ $gtype == 'gridV' ] ; then
+		# NONO STUPOID !!!!     j1="3"  ;  j2="12" 
+	        # NONO STUPOID !!!! fi
+
+	        if [ $gtype == 'gridU' ] ; then
+		    ### Based on EORCA12-MJMgd16 exp i1="95"  ;  i2="240" 
+		    i1="17"  ;  i2="58" 
+	        fi
+
+     		fiin=${b_ext}_y${year}.1d_${gtype}.nc
+		fout=${b_ext}_${AREA}_y${year}.1d_${gtype}.nc
+
+     		${NCKS} ${OPT} -d x,${i1},${i2} -d y,${j1},${j2} ${DATAINI}/${year}/${fiin} ${AREA}_y${year}_${gtype}_tmp.nc
+
+		# East-West flip
+		ncpdq -a -x ${AREA}_y${year}_${gtype}_tmp.nc ${AREA}_y${year}_${gtype}_tmpEWflip.nc
+		
+		# Sign change for velocities components 
+		if [ ${gtype} == 'gridU' ]  ; then 
+		   echo " Change U sign"
+		   ncap2 -s 'vozocrtx=-1.*vozocrtx' ${AREA}_y${year}_${gtype}_tmpEWflip.nc ${DATAOUT}/${fout}
+		elif [ ${gtype} == 'gridV' ]  ; then 
+		   echo " Change V sign"
+		   ncap2 -s 'vomecrty=-1.*vomecrty' ${AREA}_y${year}_${gtype}_tmpEWflip.nc ${DATAOUT}/${fout}
+		else
+		   mv ${AREA}_y${year}_${gtype}_tmpEWflip.nc ${DATAOUT}/${fout}
+		fi
+
+	done   # End gtype loop
+
+	cd ../
+
+
+done 	# End year loop
+
+cd ../
