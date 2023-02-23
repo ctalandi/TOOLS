@@ -6,3 +6,10 @@
 > The main script is launch.bash, just set the years over which to perform the interpolation <br>
 > After this step, we have to set the land grid points to zero in using the scrip do_misval.bash <br>
 > The finla directory where are stored the data is /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/BERING <br> 
+
+Then a final step is required to make the interpolated data ready to be used by CREG12.L75 configuration. This step is launch (interactively) in the FINAL directory using launch.bash script. 
+
+### Few steps:
+- extract the correct sub-domain
+- East-West flip 
+- change velocities sign
