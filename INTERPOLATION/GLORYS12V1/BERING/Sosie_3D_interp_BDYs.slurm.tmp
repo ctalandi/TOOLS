@@ -1,0 +1,222 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.err
+#PBS -o ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.out
+#PBS -l walltime=01:45:00
+#PBS -N IntBER_<XXYEARXX>_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+set -x
+
+YS=<XXYEARXX>
+YE=<XXYEARXX>
+AREA=BERING
+
+DATAINI="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/"
+DATADIR="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/"
+
+cd /home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/${AREA}
+
+if [ ! -d OPERATE ] ; then mkdir OPERATE ; fi 
+cd OPERATE
+
+
+if [ ${AREA} == 'SUBTROPGYRE' ]  ; then 
+ 	listvar="<XXVARGRDXX>"
+	b_ext="extGLORYS12V1-SubTrop"
+	tgt_grid="CREG12.L75-REF09_mesh_mask_SubTrop_Glorys12v1.nc"
+	dom_grid="CREG12.L75_domain_cfg_20210727_Z_SubTrop_Glorys12v1.nc"
+fi
+if [ ${AREA} == 'BERING' ] ; then 
+	listvar="<XXVARGRDXX>"
+	b_ext="extGLORYS12V1-Bering"
+	tgt_grid="CREG12.L75-REF09_mesh_mask_Bering_Glorys12v1.nc"
+	dom_grid="CREG12.L75_domain_cfg_20210727_Z_Bering_Glorys12v1.nc"
+fi
+
+# Loop over years 
+for year in `seq $YS $YE `; do 
+
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	cd ${year}
+
+	DATAOUT=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/BERING/INTERP/${year}
+
+	if [ ! -d ${DATAOUT} ] ; then 
+		mkdir -p ${DATAOUT} 
+	fi
+
+
+	# Define the list of dates to treat
+	# For Bering area, daily data have been extracted per month
+	taglist=''
+	for tag in `ls ${DATAINI}/${AREA}/${year}/*_y${year}*gridT.nc`  ; do
+		zbase=`basename ${tag}` 
+	        znew=`echo ${zbase} | sed -e "s/${b_ext}_//" -e "s/.1d_gridT.nc//" `
+	        taglist="$taglist $znew" 
+	done
+	#taglist='y199401'
+
+	# Loop over all files 
+	for gtype in `echo ${listvar} ` ; do
+	
+		zjplev=0 # a zero value for 3D interpolation or 1 for a 2D interpolation
+	        if [ $gtype == 'gridT' ] ; then
+	           svar='votemper'
+	           znamv='deptht'
+		   zmin=-10. ; zmax=50.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridS' ]  ; then 
+	           svar='vosaline'
+	           znamv='deptht'
+		   zmin=0. ; zmax=40.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridU' ]  ; then 
+	           svar='vozocrtx'
+	           znamv='depthu'
+		   zmin=-10. ; zmax=10.
+		   zmsk=umask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=U
+                   tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
+	        elif [ $gtype == 'gridV' ]  ; then 
+	           svar='vomecrty'
+	           znamv='depthv'
+		   zmin=-10. ; zmax=10.
+		   zmsk=vmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=V
+                   tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
+	        elif [ $gtype == 'grid2D' ]  ; then 
+	           svar='sossheig'
+	           znamv='-'
+		   zmin=-10. ; zmax=10.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+	        elif [ $gtype == 'icemod' ]  ; then 
+	           znamv='-'
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+		else 
+	           echo "Case does not exist " 
+		   return
+	        fi
+
+		if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+		cd ${gtype}
+
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/MESH/${tgt_grid} .
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/DOMCFG/${dom_grid} .
+		#ln -sf ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc .
+		if [ ! -f ${b_ext}_mask_Unlim.nc ] ; then 
+			ncks -d x,5,75 -d y,24,49 ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc ${b_ext}_mask_Unlim.nc
+		fi
+		ln -sf ../../../sosie3.x .
+
+		#taglist=" y200201"
+		for zzd in `echo $taglist `; do 
+		
+			# Transfrom the time axis into an unlimited one 
+	#Already done		if [ ! -d ${DATADIR}/${AREA}/${year} ] ; then mkdir -p ${DATADIR}/${AREA}/${year} ; fi 
+	#Already done		#if [ ! -f ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc ] ; then 
+	#Already done		    ncks -O --mk_rec_dmn time_counter ${DATAINI}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc -o ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc
+	#Already done		    if [ $gtype == 'gridU' ]  || [ $gtype == 'gridV' ] ; then 
+   	#Already done			ncks -A ${DATADIR}/${AREA}/GRID/${b_ext}_LatLon_Unlim.nc ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc 
+	#Already done		    fi
+	#Already done		#fi 
+
+			if [ ${gtype} == 'icemod' ]  ; then 
+				for zzzvar in `echo isnowthi iicethic ileadfra` ; do 
+		   			zmin=0. ; zmax=100.
+	           			svar=${zzzvar}
+		   			if [ ${zzzvar} == 'ileadfra' ]  ; then 
+					    zmin=0. ; zmax=1.
+					fi
+					ncks -d x,5,75 -d y,24,49 -v ${zzzvar},${zlat},${zlon} ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc  ${zzzvar}_GLORYS12V1-CREG12.L75_${zzd}.nc 
+	        			
+				done 
+
+				mv isnowthi_GLORYS12V1-CREG12.L75_${zzd}.nc GLORYS12V1-CREG12.L75_${gtype}_${zzd}.nc 
+				ncks -A iicethic_GLORYS12V1-CREG12.L75_${zzd}.nc GLORYS12V1-CREG12.L75_${gtype}_${zzd}.nc
+				ncks -A ileadfra_GLORYS12V1-CREG12.L75_${zzd}.nc GLORYS12V1-CREG12.L75_${gtype}_${zzd}.nc
+				rm -f iicethic_GLORYS12V1-CREG12.L75_*.nc ileadfra_GLORYS12V1-CREG12.L75_*.nc 
+
+			elif [ ${gtype} == 'grid2D' ]  ; then 
+				ncks -O -d x,5,75 -d y,24,49 ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc GLORYS12V1-CREG12.L75_${gtype}_${zzd}.nc
+			else 
+
+				ncks -O -d x,5,75 -d y,24,49 -v nav_lon,nav_lat,${svar} ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc input_field.nc
+				### TO KEEP  ncks -O -d x,5,75 -d y,24,49 ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc input_field.nc
+				ln -sf ../../../sosie_mapping_GLORYS12V1-CREG12.L75_${zsmap}.nc sosie_mapping_GLORYS12V1-CREG12.L75_${zzd}.nc
+
+	        		sed -e "s/<XXVARXX>/${svar}/" \
+                        	    -e "s/<XXCVZOUTXX>/${znamv}/" \
+                        	    -e "s/<XXTARGRIDXX>/${tgt_grid}/" \
+                        	    -e "s/<XXDOMGRIDXX>/${dom_grid}/" \
+                        	    -e "s/<XXTAGXX>/${zzd}/" \
+                        	    -e "s/<XXMSKXX>/${zmsk}/" \
+                        	    -e "s/<XXMINXX>/${zmin}/" \
+                        	    -e "s/<XXMAXXX>/${zmax}/" \
+                        	    -e "s/<XXTLONXX>/${zlon}/" \
+                        	    -e "s/<XXTLATXX>/${zlat}/" \
+                        	    -e "s/<XXJPELVXX>/${zjplev}/" \
+                        	    -e "s/<XXSRCGRIDXX>/${b_ext}/"  ../../../namelist_Glorys12v1 > namelist_Glorys12v1_${svar}_${zzd}
+	
+				time ./sosie3.x -f namelist_Glorys12v1_${svar}_${zzd}
+
+				mv ${svar}_GLORYS12V1-CREG12.L75_${zzd}_.nc GLORYS12V1-CREG12.L75_${gtype}_${zzd}.nc 
+				
+
+			fi
+
+		done 
+
+		if [ ${gtype} == 'icemod' ] || [ ${gtype} == 'grid2D' ] ; then 
+			ncrcat -n 12,2,1 GLORYS12V1-CREG12.L75_${gtype}_y${year}01.nc ${DATAOUT}/GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+		else
+			ncrcat -n 12,2,1 GLORYS12V1-CREG12.L75_${gtype}_y${year}01.nc GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}_tmp.nc
+			#if [ ${gtype} == 'gridT' ] ;then 
+			#	ncap2 -s "where(votemper == 50.) votemper=0." GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}_tmp.nc  GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#	ncatted -a missing_value,votemper,c,f,0. GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#fi
+			#if [ ${gtype} == 'gridS' ] ;then 
+			#	ncap2 -s "where(vosaline == 50.) vosaline=0." GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}_tmp.nc  GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#	ncatted -a missing_value,vosaline,c,f,0. GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#fi
+			#if [ ${gtype} == 'gridU' ] ;then 
+			#	ncap2 -s "where(vozocrtx == 50.) vozocrtx=0." GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}_tmp.nc  GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#	ncatted -a missing_value,vozocrtx,c,f,0. GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#fi
+			#if [ ${gtype} == 'gridV' ] ;then 
+			#	ncap2 -s "where(vomecrty == 50.) vomecrty=0." GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}_tmp.nc  GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#	ncatted -a missing_value,vomecrty,c,f,0. GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc
+			#fi
+			#mv GLORYS12V1-CREG12.L75_y${year}.1d_${gtype}.nc ${DATAOUT}/.
+		fi
+
+		rm -f GLORYS12V1-CREG12.L75_${gtype}_y${year}??.nc
+	
+	done
+
+	cd ../
+
+done 
+
+#../../do_misval.bash ${year}
+#../../do_final.bash ${year} ${year}
+
+cd ../
