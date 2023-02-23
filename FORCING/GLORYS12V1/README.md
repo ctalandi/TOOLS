@@ -2,10 +2,11 @@
 >
 > The current scripts used are located there /home1/datawork/ctalandi/PRE-POST/MERCATOR/MIO-GLORYS-DATA<br>
 
-## 3 requirements for that: <br>
-1 have an OpenDap access open <br>
-2 have a python3 environment (to install once for all, look at env_Glorys12v1)<br>
-3 do that on Datarmor through FTP batch session <br>
+## 4 requirements for that: <br>
+1. have an OpenDap access open <br>
+2. have a python3 environment (to install once for all, look at env_Glorys12v1)<br>
+3. do that on Datarmor through FTP batch session <br>
+4. Set an unlimited time record which is required to perform the interpolation using SOSIE (UNLIM-TIME)
 
 NB: The process might be quite long with Time out, need to relaunch several times the jobs before getting the data<br>
 
@@ -43,3 +44,9 @@ A report is done for 1 specified year <br>
 FTPbatch_jobs_snap.pbs <br>
 get_glorys12v1_daily_snap.py > set the tag list by hand in this script and specify if it's to get a monthly file <br>
 > qsub FTPbatch_jobs_snap.pbs
+
+### Set an unlimited time record: 
+Since few problems occur when submitting a job, this is done in an interactive way. <br>
+It relies on the  *ncks -O --mk_rec_dmn time_counter ....* NCO command 
+
+
