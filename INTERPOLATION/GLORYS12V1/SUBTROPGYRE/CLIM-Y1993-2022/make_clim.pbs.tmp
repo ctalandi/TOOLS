@@ -1,0 +1,74 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXSYEARXX>_<XXEYEARXX>_<XXVARGRDXX>_clim.err
+#PBS -o ./JOBS/bdys_<XXSYEARXX>_<XXEYEARXX>_<XXVARGRDXX>_clim.out
+#PBS -l walltime=01:45:00
+#PBS -N clmSTG_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+
+module unload nco/4.6.4_gcc-6.3.0
+module load nco/4.7.1_conda
+module list
+
+set -x
+
+YS=<XXSYEARXX>
+YE=<XXEYEARXX>
+AREA=SUBTROPGYRE
+
+DATAINI="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/${AREA}"
+DATADIR="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/${AREA}/CLIM-Y${YS}-${YE}"
+
+cd /home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/${AREA}/CLIM-Y${YS}-${YE}
+WRKAREA=/home1/scratch/ctalandi/PREPOST
+
+if [ ! -d ${WRKAREA}/BDY-OPERATE-CLIM ] ; then mkdir ${WRKAREA}/BDY-OPERATE-CLIM ; fi 
+cd ${WRKAREA}/BDY-OPERATE-CLIM
+
+
+if [ ${AREA} == 'SUBTROPGYRE' ]  ; then 
+ 	listvar="<XXVARGRDXX>"
+fi
+if [ ${AREA} == 'BERING' ] ; then 
+	listvar="<XXVARGRDXX>"
+fi
+
+
+DATAOUT=$DATADIR
+
+if [ ! -d ${DATAOUT} ] ; then 
+	mkdir -p ${DATAOUT} 
+fi
+
+
+# Loop over all files 
+for gtype in `echo ${listvar} ` ; do
+
+	if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+	cd ${gtype}
+
+	# Treat leap years and keep only 365 days
+	# 1996, 2000, 2004, 2008, 2012, 2016, 2020
+	iterfile=0
+	for year in `seq $YS $YE `; do 
+		let iterfile=$iterfile+1
+		ziterfile=`printf "%02d" $iterfile`
+		if [ ${year} -eq 1996 ] || [ ${year} -eq 2000 ] || [ ${year} -eq 2004 ] || [ ${year} -eq 2008 ] || [ ${year} -eq 2012 ] || [ ${year} -eq 2016 ] || [ ${year} -eq 2020 ] ;   then 
+		    ln -sf ${DATAINI}/NOLEAP/${year}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}.nc  GLORYS12V1-CREG12.L75_SUBTROPGYRE_${gtype}_${ziterfile}.nc
+		else
+		    ln -sf ${DATAINI}/${year}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}.nc  GLORYS12V1-CREG12.L75_SUBTROPGYRE_${gtype}_${ziterfile}.nc
+		fi
+	done
+
+	zlen=$((YE-YS+1))
+	time ncea -n $zlen,2,1  GLORYS12V1-CREG12.L75_SUBTROPGYRE_${gtype}_01.nc ${DATAOUT}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_CLIM-${YS}-${YE}.1d_${gtype}.nc
+
+	cd ../
+
+
+done 
+

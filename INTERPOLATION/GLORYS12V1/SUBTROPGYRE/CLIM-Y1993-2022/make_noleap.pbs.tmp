@@ -1,0 +1,70 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXVARGRDXX>_noleap.err
+#PBS -o ./JOBS/bdys_<XXVARGRDXX>_noleap.out
+#PBS -l walltime=01:45:00
+#PBS -N nlpSTG_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+#module load nco/4.6.4_gcc-6.3.0
+
+module unload nco/4.6.4_gcc-6.3.0
+module load nco/4.7.1_conda
+module list
+
+
+set -x
+
+YS=<XXSYEARXX>
+YE=<XXEYEARXX>
+AREA=SUBTROPGYRE
+
+DATAINI="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/${AREA}"
+DATAOUT="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/${AREA}/NOLEAP"
+
+cd /home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG12.L75/${AREA}/CLIM-Y${YS}-${YE}
+WRKAREA=/home1/scratch/ctalandi/PREPOST
+
+if [ ! -d ${WRKAREA}/BDY-OPERATE-NOLEAP ] ; then mkdir ${WRKAREA}/BDY-OPERATE-NOLEAP ; fi 
+cd ${WRKAREA}/BDY-OPERATE-NOLEAP
+
+
+if [ ${AREA} == 'SUBTROPGYRE' ]  ; then 
+ 	listvar="<XXVARGRDXX>"
+fi
+if [ ${AREA} == 'BERING' ] ; then 
+	listvar="<XXVARGRDXX>"
+fi
+
+if [ ! -d ${DATAOUT} ] ; then mkdir -p ${DATAOUT}  ; fi
+# Set the indices of stream1 end stream2 to remove the 29th Februeary day
+S1min=1  ; S1max=59
+S2min=61 ; S2max=366
+
+
+# Loop over all files 
+for gtype in `echo ${listvar} ` ; do
+
+	if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+	cd ${gtype}
+
+	# Treat leap years and keep only 365 days
+	# 1996, 2000, 2004, 2008, 2012, 2016, 2020
+
+	for year in `echo 2004 2008 2012 2016 2020 `  ; do 
+	#for year in `echo 1996 2000 2004 2008 2012 2016 2020 `  ; do 
+                mkdir $year ; cd $year 
+		if [ ! -d ${DATAOUT}/${year} ] ; then mkdir ${DATAOUT}/${year} ; fi 
+		ncks -h -F -d time_counter,${S1min},${S1max} ${DATAINI}/${year}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}.nc  GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}_S1.nc
+		ncks -h -F -d time_counter,${S2min},${S2max} ${DATAINI}/${year}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}.nc  GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}_S2.nc
+                ncrcat GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}_S1.nc GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}_S2.nc ${DATAOUT}/${year}/GLORYS12V1-CREG12.L75_SUBTROPGYRE_y${year}.1d_${gtype}.nc
+		cd ../
+	done
+
+	cd ../
+
+done 
+
