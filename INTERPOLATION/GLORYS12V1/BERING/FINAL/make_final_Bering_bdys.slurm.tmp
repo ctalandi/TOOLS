@@ -54,14 +54,15 @@ for year in `seq $YS $YE `; do
 		i1="18"  ;  i2="59" 
 		j1="2"   ;  j2="11" 
 
-	        # NONO STUPOID !!!! if [ $gtype == 'gridV' ] ; then
-		# NONO STUPOID !!!!     j1="3"  ;  j2="12" 
-	        # NONO STUPOID !!!! fi
-
-	        if [ $gtype == 'gridU' ] ; then
-		    ### Based on EORCA12-MJMgd16 exp i1="95"  ;  i2="240" 
-		    i1="17"  ;  i2="58" 
+	        if [ $gtype == 'gridV' ] ; then
+		    j1="3"  ;  j2="12" 
 	        fi
+
+		# Update 2023-03-10 
+	        # No in the last way to interpolated fields if [ $gtype == 'gridU' ] ; then
+		# No in the last way to interpolated fields     ### Based on EORCA12-MJMgd16 exp i1="95"  ;  i2="240" 
+		# No in the last way to interpolated fields     i1="17"  ;  i2="58" 
+	        # No in the last way to interpolated fields fi
 
      		fiin=${b_ext}_y${year}.1d_${gtype}.nc
 		fout=${b_ext}_${AREA}_y${year}.1d_${gtype}.nc

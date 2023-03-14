@@ -88,7 +88,7 @@ for year in `seq $YS $YE `; do
 		   zmsk=umask
 		   zlat=nav_lat ; zlon=nav_lon 
 		   zsmap=U
-                   tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
+                   #tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
 	        elif [ $gtype == 'gridV' ]  ; then 
 	           svar='vomecrty'
 	           znamv='depthv'
@@ -96,7 +96,7 @@ for year in `seq $YS $YE `; do
 		   zmsk=vmask
 		   zlat=nav_lat ; zlon=nav_lon 
 		   zsmap=V
-                   tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
+                   #tgt_grid="CREG12.L75-REF09_UVmask_Bering_Glorys12v1.nc"
 	        elif [ $gtype == 'grid2D' ]  ; then 
 	           svar='sossheig'
 	           znamv='-'
