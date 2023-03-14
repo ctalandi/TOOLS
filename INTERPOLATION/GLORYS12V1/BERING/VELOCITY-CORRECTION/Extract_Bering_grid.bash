@@ -44,6 +44,8 @@ ftmpU=CREG12.L75-REF09_mesh_mask_Bering_Glorys12v1_tmpU.nc
 ftmpV=CREG12.L75-REF09_mesh_mask_Bering_Glorys12v1_tmpV.nc 
 fout=CREG12.L75-REF09_mesh_mask_Bering_Glorys12v1_Tgt.nc 
 
+ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/MESH/${fiin} .
+
 # Extract the corect data depending the considedred point
 ${NCKS} ${OPT} -d x,${iT1},${iT2} -d y,${jT1},${jT2} -v gdept_1d,glamt,gphit,tmask ${fiin} ${ftmpT}
 ${NCKS} ${OPT} -d x,${iU1},${iU2} -d y,${jU1},${jU2} -v glamu,gphiu,umask ${fiin} ${ftmpU}
