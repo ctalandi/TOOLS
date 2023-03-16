@@ -1,0 +1,216 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.err
+#PBS -o ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.out
+#PBS -l walltime=01:45:00
+#PBS -N IpB_<XXYEARXX>_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+set -x
+
+YS=<XXYEARXX>
+YE=<XXYEARXX>
+AREA=BERING
+
+DATAINI="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/"
+DATADIR="/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/"
+
+cd /home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}
+STAREA=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}
+WRKAREA=/home1/scratch/ctalandi/PREPOST
+
+if [ ! -d ${WRKAREA}/BERING-OPERATE-INTERP ] ; then mkdir ${WRKAREA}/BERING-OPERATE-INTERP  ; fi 
+cd ${WRKAREA}/BERING-OPERATE-INTERP
+
+
+if [ ${AREA} == 'SUBTROPGYRE' ]  ; then 
+ 	listvar="<XXVARGRDXX>"
+	b_ext="extGLORYS12V1-SubTrop"
+	tgt_grid="CREG025.L75-REF09_mesh_mask_SubTrop_Glorys12v1.nc"
+	dom_grid="CREG025.L75_domain_cfg_20210727_Z_SubTrop_Glorys12v1.nc"
+fi
+if [ ${AREA} == 'BERING' ] ; then 
+	listvar=<XXVARGRDXX>
+	b_ext=extGLORYS12V1-Bering
+	tgt_grid=CREG025.L75-NEMO420_mesh_mask_Bering_Glorys12v1.nc
+	dom_grid=CREG025.L75-NEMO420_domain_cfg_Bering_Glorys12v1.nc
+fi
+
+# Loop over years 
+for year in `seq $YS $YE `; do 
+
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	cd ${year}
+
+	DATAOUT=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/BERING/INTERP/${year}
+
+	if [ ! -d ${DATAOUT} ] ; then mkdir -p ${DATAOUT} ; fi
+
+	# Define the list of dates to treat
+	# For Bering area, daily data have been extracted per month
+	taglist=''
+	for tag in `ls ${DATAINI}/${AREA}/${year}/*_y${year}*gridT.nc`  ; do
+		zbase=`basename ${tag}` 
+	        znew=`echo ${zbase} | sed -e "s/${b_ext}_//" -e "s/.1d_gridT.nc//" `
+	        taglist="$taglist $znew" 
+	done
+
+	# Loop over all files 
+	for gtype in `echo ${listvar} ` ; do
+	
+		zjplev=0 # a zero value for 3D interpolation or 1 for a 2D interpolation
+	        if [ $gtype == 'gridT' ] ; then
+	           svar='votemper'
+	           znamv='deptht'
+		   zmin=-10. ; zmax=50.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridS' ]  ; then 
+	           svar='vosaline'
+	           znamv='deptht'
+		   zmin=0. ; zmax=40.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridU' ]  ; then 
+	           svar='vozocrtx'
+	           znamv='depthu'
+		   zmin=-10. ; zmax=10.
+		   zmsk=umask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=U
+	        elif [ $gtype == 'gridV' ]  ; then 
+	           svar='vomecrty'
+	           znamv='depthv'
+		   zmin=-10. ; zmax=10.
+		   zmsk=vmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=V
+	        elif [ $gtype == 'grid2D' ]  ; then 
+	           svar='sossheig'
+	           znamv='-'
+		   zmin=-10. ; zmax=10.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+	        elif [ $gtype == 'icemod' ]  ; then 
+	           znamv='-'
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+		else 
+	           echo "Case does not exist " 
+		   return
+	        fi
+
+		if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+		cd ${gtype}
+
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${tgt_grid} .
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${dom_grid} .
+		#ln -sf ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc .
+		# Reduce the GLORYS12V1 domain to speedup the process of interpolation
+                iG1=0    ;    iG2=75
+		jG1=24   ;    jG2=50
+		if [ ! -f ${b_ext}_mask_Unlim.nc ] ; then 
+			ncks -d x,${iG1},${iG2} -d y,${jG1},${jG2} ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc ${b_ext}_mask_Unlim.nc
+		fi
+		ln -sf /home1/datahome/ctalandi/DEV/SOSIE_GIT_MASTER/bin/sosie3.x .
+
+		for zzd in `echo $taglist `; do 
+		
+			# Transfrom the time axis into an unlimited one 
+	#Already done		if [ ! -d ${DATADIR}/${AREA}/${year} ] ; then mkdir -p ${DATADIR}/${AREA}/${year} ; fi 
+	#Already done		#if [ ! -f ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc ] ; then 
+	#Already done		    ncks -O --mk_rec_dmn time_counter ${DATAINI}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc -o ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc
+	#Already done		    if [ $gtype == 'gridU' ]  || [ $gtype == 'gridV' ] ; then 
+   	#Already done			ncks -A ${DATADIR}/${AREA}/GRID/${b_ext}_LatLon_Unlim.nc ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc 
+	#Already done		    fi
+	#Already done		#fi 
+
+			ln -sf ${STAREA}/sosie_mapping_GLORYS12V1-CREG025.L75_${zsmap}.nc sosie_mapping_GLORYS12V1-CREG025.L75_${zzd}.nc
+
+			if [ ${gtype} == 'icemod' ]  ; then 
+				for zzzvar in `echo isnowthi iicethic ileadfra` ; do 
+		   			zmin=0. ; zmax=100.
+	           			svar=${zzzvar}
+		   			if [ ${zzzvar} == 'ileadfra' ]  ; then 
+					    zmin=0. ; zmax=1.
+					fi
+					ncks -O -d x,${iG1},${iG2} -d y,${jG1},${jG2} -v ${zzzvar},${zlat},${zlon} ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc  input_field.nc
+
+	        			sed -e "s/<XXVARXX>/${svar}/" \
+                        		    -e "s/<XXCVZOUTXX>/${znamv}/" \
+                        		    -e "s/<XXTARGRIDXX>/${tgt_grid}/" \
+                        		    -e "s/<XXDOMGRIDXX>/${dom_grid}/" \
+                        		    -e "s/<XXTAGXX>/${zzd}/" \
+                        		    -e "s/<XXMSKXX>/${zmsk}/" \
+                        		    -e "s/<XXMINXX>/${zmin}/" \
+                        		    -e "s/<XXMAXXX>/${zmax}/" \
+                        		    -e "s/<XXTLONXX>/${zlon}/" \
+                        		    -e "s/<XXTLATXX>/${zlat}/" \
+                        		    -e "s/<XXJPELVXX>/${zjplev}/" \
+                        		    -e "s/<XXSRCGRIDXX>/${b_ext}/"  ${STAREA}/namelist_Glorys12v1 > namelist_Glorys12v1_${svar}_${zzd}
+	
+					time ./sosie3.x -f namelist_Glorys12v1_${svar}_${zzd}
+
+				done 
+
+				mv isnowthi_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc 
+				ncks -A iicethic_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc
+				ncks -A ileadfra_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc
+				#rm -f ????????_GLORYS12V1-CREG025.L75_${zzd}_.nc 
+
+			else 
+
+				# If we keep the full extracted GLORYS12V1 area (but interpolation will be longer)
+				#ln -sf ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc input_field.nc
+				# else we reduce the GLORYS12V1 area to the strict necessary
+				ncks -O -d x,${iG1},${iG2} -d y,${jG1},${jG2} ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc input_field.nc
+
+
+	        		sed -e "s/<XXVARXX>/${svar}/" \
+                        	    -e "s/<XXCVZOUTXX>/${znamv}/" \
+                        	    -e "s/<XXTARGRIDXX>/${tgt_grid}/" \
+                        	    -e "s/<XXDOMGRIDXX>/${dom_grid}/" \
+                        	    -e "s/<XXTAGXX>/${zzd}/" \
+                        	    -e "s/<XXMSKXX>/${zmsk}/" \
+                        	    -e "s/<XXMINXX>/${zmin}/" \
+                        	    -e "s/<XXMAXXX>/${zmax}/" \
+                        	    -e "s/<XXTLONXX>/${zlon}/" \
+                        	    -e "s/<XXTLATXX>/${zlat}/" \
+                        	    -e "s/<XXJPELVXX>/${zjplev}/" \
+                        	    -e "s/<XXSRCGRIDXX>/${b_ext}/"  ${STAREA}/namelist_Glorys12v1 > namelist_Glorys12v1_${svar}_${zzd}
+	
+				time ./sosie3.x -f namelist_Glorys12v1_${svar}_${zzd}
+
+				mv ${svar}_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc 
+				
+
+			fi
+
+		done 
+
+		ncrcat -n 12,2,1 GLORYS12V1-CREG025.L75_${gtype}_y${year}01.nc GLORYS12V1-CREG025.L75_y${year}.1d_${gtype}_tmp.nc
+
+		rm -f GLORYS12V1-CREG025.L75_${gtype}_y${year}??.nc
+	
+	done
+
+	cd ../
+
+done 
+
+#../../do_misval.bash ${year}
+#../../do_final.bash ${year} ${year}
+
+cd ../
