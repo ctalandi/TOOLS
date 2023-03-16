@@ -287,7 +287,7 @@ def read_sim(sim2read=None,bdys='north', s_year=None, e_year=None):
 
                 GVcmp_data_read, GTcmp_data_read, GScmp_data_read, cmp_data_read_depth, cmp_ze1v, cmp_data_read_dz, sizes_ID, cmp_lon = read_sim_GLORYS12V1AExMercL75(bdys=bdys, s_year=s_year, e_year=e_year)
 
-                LOCBDY='BERING'   ; jbegV=1 ; jbegT=0
+                LOCBDY='BERING'   ; jbegV=0 ; jbegT=0 # The position of the raw to read 
                 if bdys == 'south': 
                    LOCBDY='RAPID' ; jbeg=0
 
@@ -1043,7 +1043,6 @@ def read_sim_GLORYS12V1AExMercL75(bdys='north', s_year=None, e_year=None):
         cmp_tmsk = npy.squeeze(field.variables['tmask'])
 
         inDIR='/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/BERING/'
-        #inDIR='/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG12.L75/BDYS/PREV-BERING/'
         print(inDIR)
 	# Read 1 file just to get dim. size
         getsizes_ID=Dataset(inDIR+'ALL/GLORYS12V1-CREG12.L75_BERING_y1999.1d_gridT.nc')
@@ -1055,28 +1054,29 @@ def read_sim_GLORYS12V1AExMercL75(bdys='north', s_year=None, e_year=None):
         c_year=s_year
         while c_year <= e_year :
                 print("                         Read year:", c_year)
-                cmp_DIR=inDIR+'/ALL/'
+                cmpT_DIR=inDIR+'/ALL/'
+                cmpV_DIR=inDIR+str(c_year)+'/NO-COR/'
                 fileV='GLORYS12V1-CREG12.L75_BERING_y'+str(c_year)+'.1d_gridV.nc'
                 fileT='GLORYS12V1-CREG12.L75_BERING_y'+str(c_year)+'.1d_gridT.nc'
                 fileS='GLORYS12V1-CREG12.L75_BERING_y'+str(c_year)+'.1d_gridS.nc'
                 if c_year == s_year :
-                        field = Dataset(cmp_DIR+fileV)
+                        field = Dataset(cmpV_DIR+fileV)
                         GVcmp_data_read = field.variables['vomecrty']
                         #GVcmp_data_read = field.variables['vomecrty']*cmp_vmsk
-                        field = Dataset(cmp_DIR+fileT)
+                        field = Dataset(cmpT_DIR+fileT)
                         GTcmp_data_read = field.variables['votemper']
                         #GTcmp_data_read = field.variables['votemper']*cmp_tmsk
-                        field = Dataset(cmp_DIR+fileS)
+                        field = Dataset(cmpT_DIR+fileS)
                         GScmp_data_read = field.variables['vosaline']
                         #GScmp_data_read = field.variables['vosaline']*cmp_tmsk
                 else:
-                	field = Dataset(cmp_DIR+fileV)
+                	field = Dataset(cmpV_DIR+fileV)
                 	GVcmp_data_read = npy.append(GVcmp_data_read,field.variables['vomecrty'],axis=0)
                 	#GVcmp_data_read = npy.append(GVcmp_data_read,field.variables['vomecrty']*cmp_vmsk,axis=0)
-                	field = Dataset(cmp_DIR+fileT)
+                	field = Dataset(cmpT_DIR+fileT)
                 	GTcmp_data_read = npy.append(GTcmp_data_read,field.variables['votemper'],axis=0)
                 	#GTcmp_data_read = npy.append(GTcmp_data_read,field.variables['votemper']*cmp_tmsk,axis=0)
-                	field = Dataset(cmp_DIR+fileS)
+                	field = Dataset(cmpT_DIR+fileS)
                 	GScmp_data_read = npy.append(GScmp_data_read,field.variables['vosaline'],axis=0)
                 	#GScmp_data_read = npy.append(GScmp_data_read,field.variables['vosaline']*cmp_tmsk,axis=0)
                 
