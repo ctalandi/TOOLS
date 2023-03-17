@@ -1,0 +1,182 @@
+
+set -x
+
+YS=<XXYEARXX>
+YE=<XXYEARXX>
+AREA=SUBTROPGYRE
+
+DATAINI=/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/
+DATADIR=/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/MERCATOR/GLORYS12V1/MODIFIED/
+WRKAREA=/home1/scratch/ctalandi/PREPOST
+STAREA=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}
+
+if [ ! -d ${WRKAREA}/SUBTROP-OPERATE-INTERP ] ; then mkdir ${WRKAREA}/SUBTROP-OPERATE-INTERP ; fi 
+cd ${WRKAREA}/SUBTROP-OPERATE-INTERP  
+
+
+if [ ${AREA} == 'SUBTROPGYRE' ]  ; then 
+ 	listvar=<XXVARGRDXX>
+	b_ext=extGLORYS12V1-SubTrop
+	tgt_grid=CREG025.L75-NEMO420_mesh_mask_Subtropgyre_Glorys12v1.nc
+	dom_grid=CREG025.L75-NEMO420_domain_cfg_Subtropgyre_Glorys12v1.nc
+fi
+
+# Loop over years 
+for year in `seq $YS $YE `; do 
+
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	if [ ! -d ${year} ] ; then mkdir ${year} ; fi
+	cd ${year}
+
+	DATAOUT=/home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/BDYS/${AREA}/${year}
+
+	if [ ! -d ${DATAOUT} ] ; then 
+		mkdir -p ${DATAOUT} 
+	fi
+
+	# Loop over all files 
+	for gtype in `echo ${listvar} ` ; do
+	
+		# Define the list of dates to treat
+		# For the Subtropics area, either monthly or daily data have been extracted 
+		taglist=''
+		for tag in `ls ${DATAINI}/${AREA}/${year}/*_y${year}*${gtype}.nc`  ; do
+			zbase=`basename ${tag}` 
+		        znew=`echo ${zbase} | sed -e "s/${b_ext}_//" -e "s/.1d_${gtype}.nc//" `
+		        taglist="$taglist $znew" 
+		done
+		#taglist='y199401'
+
+		zjplev=0 # a zero value for 3D interpolation or 1 for a 2D interpolation
+	        if [ $gtype == 'gridT' ] ; then
+	           svar='votemper'
+	           znamv='deptht'
+		   zmin=-10. ; zmax=50.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridS' ]  ; then 
+	           svar='vosaline'
+	           znamv='deptht'
+		   zmin=0. ; zmax=40.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+	        elif [ $gtype == 'gridU' ]  ; then 
+	           svar='vozocrtx'
+	           znamv='depthu'
+		   zmin=-10. ; zmax=10.
+		   zmsk=umask
+		   zlat=gphiu ; zlon=glamu
+		   #zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=U
+	        elif [ $gtype == 'gridV' ]  ; then 
+	           svar='vomecrty'
+	           znamv='depthv'
+		   zmin=-10. ; zmax=10.
+		   zmsk=vmask
+		   zlat=gphiv ; zlon=glamv 
+		   #zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=V
+	        elif [ $gtype == 'grid2D' ]  ; then 
+	           svar='sossheig'
+	           znamv='-'
+		   zmin=-10. ; zmax=10.
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+	        elif [ $gtype == 'icemod' ]  ; then 
+	           znamv='-'
+		   zmsk=tmask
+		   zlat=nav_lat ; zlon=nav_lon 
+		   zsmap=T
+		   zjplev=1
+		else 
+	           echo "Case does not exist " 
+		   return
+	        fi
+
+		if [ ! -d ${gtype} ] ; then mkdir ${gtype} ; fi 
+		cd ${gtype}
+
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${tgt_grid} .
+		ln -sf /home/datawork-lops-drakkarcom/SIMULATION-OUTPUTS/FREDY/CONFIGS/CREG025.L75/GRID/${dom_grid} .
+
+		# If we use the full extracted GLORYS12V1 area (but is cost more)
+		#ln -sf ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc .
+		# else we reduce as much as possible the area
+                iG1=5    ;    iG2=860
+                jG1=19   ;    jG2=52
+		if [ ! -f ${b_ext}_mask_Unlim.nc ] ; then 
+			ncks -d x,${iG1},${iG2} -d y,${jG1},${jG2} ${DATADIR}/${AREA}/GRID/${b_ext}_mask_Unlim.nc ${b_ext}_mask_Unlim.nc
+		fi
+
+		ln -sf /home1/datahome/ctalandi/DEV/SOSIE_GIT_MASTER/bin/sosie3.x .
+
+		dcount=1  ; mcount=1
+		for zzd in `echo $taglist `; do 
+		
+			zdcount=`printf "%03d" $dcount`
+			zmcount=`printf "%02d" $mcount`
+			# Transfrom the time axis into an unlimited one 
+	#Already done		if [ ! -d ${DATADIR}/${AREA}/${year} ] ; then mkdir -p ${DATADIR}/${AREA}/${year} ; fi 
+	#Already done		#if [ ! -f ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc ] ; then 
+	#Already done		    ncks -O --mk_rec_dmn time_counter ${DATAINI}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc -o ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc
+	#Already done 	if [ $gtype == 'gridU' ]  || [ $gtype == 'gridV' ] ; then 
+	#Already done 	    echo " Apply glam[uv] & gphi[uv] to both grid[UV] files before the vertical interpolation !! " 
+	#Already done 	    echo " 			>>>> TO DO ONLY ONCE !!!!! " 
+	#Already done 	    ncks -A ${DATADIR}/${AREA}/GRID/${b_ext}_LatLon_Unlim.nc ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc 
+	#Already done 	fi
+	#Already done		#fi 
+
+			ncks -O -d x,${iG1},${iG2} -d y,${jG1},${jG2}  ${DATADIR}/${AREA}/${year}/${b_ext}_${zzd}.1d_${gtype}.nc input_field.nc
+
+			ln -sf ${STAREA}/sosie_mapping_GLORYS12V1-CREG025.L75_${zsmap}.nc sosie_mapping_GLORYS12V1-CREG025.L75_${zzd}.nc
+
+	        	sed -e "s/<XXVARXX>/${svar}/" \
+                            -e "s/<XXCVZOUTXX>/${znamv}/" \
+                            -e "s/<XXTARGRIDXX>/${tgt_grid}/" \
+                            -e "s/<XXDOMGRIDXX>/${dom_grid}/" \
+                            -e "s/<XXTAGXX>/${zzd}/" \
+                            -e "s/<XXMSKXX>/${zmsk}/" \
+                            -e "s/<XXMINXX>/${zmin}/" \
+                            -e "s/<XXMAXXX>/${zmax}/" \
+                            -e "s/<XXTLONXX>/${zlon}/" \
+                            -e "s/<XXTLATXX>/${zlat}/" \
+                            -e "s/<XXJPELVXX>/${zjplev}/" \
+                            -e "s/<XXSRCGRIDXX>/${b_ext}/"  ${STAREA}/namelist_Glorys12v1 > namelist_Glorys12v1_${svar}_${zzd}
+	
+			time ./sosie3.x -f namelist_Glorys12v1_${svar}_${zzd}
+
+			if [ ${gtype} == 'grid2D' ] ; then 
+                                mv ${svar}_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_m${zmcount}.nc
+			else
+				mv ${svar}_GLORYS12V1-CREG025.L75_${zzd}_.nc GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc 
+				ln -sf GLORYS12V1-CREG025.L75_${gtype}_${zzd}.nc GLORYS12V1-CREG025.L75_${gtype}_d${zdcount}.nc
+			fi
+			
+			let dcount=$dcount+1
+			let mcount=$mcount+1
+
+		done 
+
+		if [ ${gtype} == 'grid2D' ] ; then 
+			ncrcat -n 12,2,1 GLORYS12V1-CREG025.L75_${gtype}_m01.nc GLORYS12V1-CREG025.L75_SUBTROPGYRE_y${year}.1d_${gtype}_tmp.nc 
+		else
+			if [ $year -eq 1996 ] || [ $year -eq 2000 ] || [ $year -eq 2004 ] || [ $year -eq 2008 ] || [ $year -eq 2012 ] || [ $year -eq 2016 ] || [ $year -eq 2020 ] ;then 
+				ncrcat -n 366,3,1 GLORYS12V1-CREG025.L75_${gtype}_d001.nc GLORYS12V1-CREG025.L75_SUBTROPGYRE_y${year}.1d_${gtype}_tmp.nc
+			else
+				ncrcat -n 365,3,1 GLORYS12V1-CREG025.L75_${gtype}_d001.nc GLORYS12V1-CREG025.L75_SUBTROPGYRE_y${year}.1d_${gtype}_tmp.nc
+			fi
+		fi
+
+		rm -f GLORYS12V1-CREG025.L75_${gtype}_y${year}??.nc
+	
+	done
+
+	cd ../
+
+done 
+
+cd ../

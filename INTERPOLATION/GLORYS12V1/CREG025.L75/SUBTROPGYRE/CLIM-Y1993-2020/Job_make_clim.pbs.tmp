@@ -1,0 +1,25 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXSYEARXX>_<XXEYEARXX>_<XXVARGRDXX>_clim.err
+#PBS -o ./JOBS/bdys_<XXSYEARXX>_<XXEYEARXX>_<XXVARGRDXX>_clim.out
+#PBS -l walltime=01:45:00
+#PBS -N clmSTG_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+
+module unload nco/4.6.4_gcc-6.3.0
+module load nco/4.7.1_conda
+module list
+
+set -x
+
+AREA=SUBTROPGYRE
+cd /home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}/CLIM-Y<XXSYEARXX>-<XXEYEARXX>/JOBS
+
+
+chmod 750 make_clim_y<XXSYEARXX>-<XXEYEARXX>_<XXVARGRDXX>.pbs 
+
+time ./make_clim_y<XXSYEARXX>-<XXEYEARXX>_<XXVARGRDXX>.pbs & >  <XXSYEARXX>-<XXEYEARXX>_<XXVARGRDXX>.out 

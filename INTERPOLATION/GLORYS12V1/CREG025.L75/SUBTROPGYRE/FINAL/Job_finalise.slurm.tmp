@@ -1,0 +1,20 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/finalise.err
+#PBS -o ./JOBS/finalise.out
+#PBS -l walltime=01:45:00
+#PBS -N IpT_finalise
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+AREA=SUBTROPGYRE
+STAREA=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}/FINAL
+
+cd ${STAREA}
+
+chmod 755 do_finalise.bash 
+time ./do_finalise.bash >& out_finalise.txt

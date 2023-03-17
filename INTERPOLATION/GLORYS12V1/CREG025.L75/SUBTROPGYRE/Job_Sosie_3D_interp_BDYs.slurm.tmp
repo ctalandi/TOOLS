@@ -1,0 +1,21 @@
+#!/bin/bash
+####PBS -l mem=115g
+#PBS -e ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.err
+#PBS -o ./JOBS/bdys_<XXYEARXX>_<XXVARGRDXX>_interp.out
+#PBS -l walltime=01:45:00
+#PBS -N IpT_<XXYEARXX>_<XXVARGRDXX>
+#PBS -m n
+#
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+module load NETCDF-test/4.3.3.1-impi-intel2018
+module load nco/4.6.4_gcc-6.3.0
+
+#set -x
+AREA=SUBTROPGYRE
+
+STAREA=/home1/datawork/ctalandi/PRE-POST/FREDY/BUILD-BDYS/CREG025.L75/${AREA}
+cd ${STAREA}/JOBS
+
+chmod 755 Sosie_3D_interp_BDYs_y<XXYEARXX>_<XXVARGRDXX>.slurm
+time ./Sosie_3D_interp_BDYs_y<XXYEARXX>_<XXVARGRDXX>.slurm >& <XXYEARXX>_<XXVARGRDXX>.out 
