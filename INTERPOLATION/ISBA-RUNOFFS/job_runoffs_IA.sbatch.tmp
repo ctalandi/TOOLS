@@ -1,0 +1,44 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --partition=prepost 
+#SBATCH --hint=nomultithread
+#SBATCH -A cli@cpu
+#SBATCH -J <XXCONFXX>-ISBA
+#SBATCH -e ./JOBS/<XXCONFXX>runoffs_IA.e%j
+#SBATCH -o ./JOBS/<XXCONFXX>runoffs_IA.o%j
+#SBATCH --time=04:00:00
+####SBATCH --exclusive
+
+# module python package ?
+module load python/3.8.8
+module list 
+
+set -xv 
+
+CONFIG=<XXCONFXX>
+
+cd /gpfsdswork/projects/rech/cli/rost832/PRE-POST/ISBA-RUNOFFS
+
+
+if [ ${CONFIG} == 'CREG12' ] ; then 
+	cd TMP-CREG12
+	ln -sf ../CREG-GRIDS/CREG12.L75-REF09_mesh_mask.nc mask.nc 
+	ln -sf ../CREG-GRIDS/CREG12.L75_domain_cfg_20210727_Z.nc .
+	cp ../build_CREG12.L75_runoff_interannual_fromISBA.py .
+	
+	time python build_CREG12.L75_runoff_interannual_fromISBA.py 
+fi
+
+if [ ${CONFIG} == 'CREG025' ] ; then 
+	cd TMP-CREG025
+	ln -sf ../CREG-GRIDS/CREG025.L75-NEMO420_mesh_mask.nc mask.nc 
+	ln -sf ../CREG-GRIDS/CREG025.L75_domain_cfg.nc .
+	cp ../build_CREG025.L75_runoff_interannual_fromISBA.py  .
+	
+	time python build_CREG025.L75_runoff_interannual_fromISBA.py 
+fi
+
+
+
+
