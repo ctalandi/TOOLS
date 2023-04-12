@@ -3,18 +3,21 @@
 import numpy as npy
 import matplotlib.pylab as plt 
 
-def read_obsBERING(make_plot=False):
+def read_obsBERING(ef_year=2017, make_plot=False):
         #----------------------------------------------------------------------------------------
-        # Structure of the ASCII file BeringStrait_Monthlymeans_TRANSPORT_Jun2017.txt
+        # Structure of the ASCII file BeringStrait_Monthlymeans_TRANSPORT_Jun2017.txt or 2021 one
         #% Mooring  Year    Month   Mean  Error        MeanCorr  Error
         
-        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_TRANSPORT_Jun2017.txt'
+        extnam='Jun2017' 
+        if ef_year == 2021 : extnam='Jan2021'
+        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_TRANSPORT_'+extnam+'.txt'
         
         # Open file
         f = open(dir+file,'r')
         
         # Read and ignore header lines
         skip=0  ; ltoskip=40
+        if ef_year == 2021 :  ltoskip=48
         while skip <= ltoskip-1 : 
                 header1 = f.readline()
                 skip+=1
@@ -31,16 +34,17 @@ def read_obsBERING(make_plot=False):
         # UNITS: Sv
         
         #----------------------------------------------------------------------------------------
-        # Structure of the ASCII file BeringStrait_Monthlymeans_FW_Jun2017.txt
+        # Structure of the ASCII file BeringStrait_Monthlymeans_FW_Jun2017.txt or 2021 one
         #% Mooring  Year    Month   Mean  Error        Mean  Error
         
-        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_FW_Jun2017.txt'
+        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_FW_'+extnam+'.txt'
         
         # Open file
         f = open(dir+file,'r')
         
         # Read and ignore header lines
         skip=0  ; ltoskip=41
+        if ef_year == 2021 :  ltoskip=49
         while skip <= ltoskip-1 : 
                 header1 = f.readline()
                 skip+=1
@@ -56,16 +60,17 @@ def read_obsBERING(make_plot=False):
         # UNITS: km3
         
         #----------------------------------------------------------------------------------------
-        # Structure of the ASCII file BeringStrait_Monthlymeans_HEAT_Jun2017.txt
+        # Structure of the ASCII file BeringStrait_Monthlymeans_HEAT_Jun2017.txt or 2021 one
         #
         
-        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_HEAT_Jun2017.txt'
+        dir='./OBS-BERING/'   ; file='BeringStrait_Monthlymeans_HEAT_'+extnam+'.txt'
         
         # Open file
         f = open(dir+file,'r')
         
         # Read and ignore header lines
         skip=0  ; ltoskip=41
+        if ef_year == 2021 :  ltoskip=49
         while skip <= ltoskip-1 : 
                 header1 = f.readline()
                 skip+=1
@@ -89,7 +94,7 @@ def read_obsBERING(make_plot=False):
            c_year+=1
         
         
-        npy.savez('./OBS-BERING/WOODGATE-Obs_BeringStrait_Monthlymeans_FWHeatTrans_June2017.npz', transp_A3MeanCorr=transp_A3MeanCorr, FW_A3FWcorr=FW_A3FWcorr, HT_A3heatCorr=HT_A3heatCorr, YearsObs=years)
+        npy.savez('./OBS-BERING/WOODGATE-Obs_BeringStrait_Monthlymeans_FWHeatTrans_'+extnam+'.npz', transp_A3MeanCorr=transp_A3MeanCorr, FW_A3FWcorr=FW_A3FWcorr, HT_A3heatCorr=HT_A3heatCorr, YearsObs=years)
         
         
         if make_plot:
@@ -123,7 +128,7 @@ def read_obsBERING(make_plot=False):
                  plt.grid(True,linestyle='--', color='grey',alpha=0.7)
                  
                  plt.tight_layout()
-                 plt.savefig('BeringStrait_monthlymeans_Jun2017.pdf')
+                 plt.savefig('BeringStrait_monthlymeans_'+extnam+'.pdf')
         
 
         return transp_A3MeanCorr, FW_A3FWcorr, HT_A3heatCorr, years
