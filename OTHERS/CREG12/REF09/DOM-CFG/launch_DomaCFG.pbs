@@ -1,0 +1,42 @@
+#!/bin/bash
+#MSUB -r DomCFG
+#MSUB -n 64
+#MSUB -T 3600
+#MSUB -q xlarge
+#MSUB -o DomCFG.o%I
+#MSUB -e DomCFG.e%I
+#MSUB -A gen7420
+
+set -x 
+ulimit -s unlimited
+
+module load intel/20.0.4
+module load mpi/openmpi/4.1.4
+module load flavor/hdf5/parallel
+module load hdf5/1.8.20
+module load netcdf-fortran/4.4.4
+
+cd /ccc/scratch/cont003/gen7420/talandel/PRE-POST-TMP/DOM-CFG
+
+ln -sf /ccc/workflash/cont003/gen7420/talandel/PRE-POST/DOMAIN-CFG/namelist_ref   .
+ln -sf /ccc/workflash/cont003/gen7420/talandel/PRE-POST/DOMAIN-CFG/namelist_cfg   .
+rsync /ccc/store/cont003/gen7420/talandel/CONFIGS/BUILD-CREG/CREG12.L75/CREG12.L75-I/coordinates_CREG12_lbclnk_noz_vh20160930.nc  .
+rsync /ccc/store/cont003/gen7420/talandel/CONFIGS/BUILD-CREG/CREG12.L75/CREG12.L75-I/bathymetry_CREG12_V3.3_REF09.nc              .
+
+ln -sf /ccc/cont003/home/gen7420/talandel/DEV/DCM/DCM_4.2/DCMTOOLS/NEMOREF/NEMO4_r4.2.0/tools/DOMAINcfg/make_domain_cfg.exe  .
+ln -sf /ccc/cont003/home/gen7420/talandel/DEV/DCM/DCM_4.2/DCMTOOLS/NEMOREF/NEMO4_r4.2.0/tools/DOMAINcfg/dom_doc.exe .
+
+./make_domain_cfg.exe
+#srun -n 4 ./make_domain_cfg.exe
+
+# To document the parameter set into the namelist_cfg in the final file itself
+./dom_doc.exe -n namelist_cfg -d domain_cfg.nc 
+
+date=20230731
+
+mv domain_cfg.nc CREG12.L75-REF09_domain_cfg_${date}.nc
+# The --cnk_dmn nav_lev,1 option IS mandatory or the NEMO run will crash with a Out-Of-Memory error
+ncks -4 -L 1 --cnk_dmn nav_lev,1 CREG12.L75-REF09_domain_cfg_${date}.nc CREG12.L75-REF09_domain_cfg_${date}_Z.nc
+ncrename -d time_counter,t -d nav_lev,z CREG12.L75-REF09_domain_cfg_${date}_Z.nc 
+
+#rsync -rlrt CREG12.L75-REF09_domain_cfg_${date}.nc CREG12.L75-REF09_domain_cfg_${date}_Z.nc /ccc/store/cont003/gen7420/talandel/CONFIGS/BUILD-CREG/CREG12.L75/CREG12.L75-I/.
