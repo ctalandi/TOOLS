@@ -21,7 +21,7 @@
                            ! = 3 compute from parent (if "key_agrif")
    nn_interp   =    1                          ! type of interpolation (nn_bathy =2)
    cn_fcoord   =  'coordinates_CREG12_lbclnk_noz_vh20160930.nc'      ! external coordinates file (jphgr_msh = 0)
-   cn_topo     =  'bathymetry_CREG12_V3.3_REF09.nc'                  ! external topo file (nn_bathy =2)
+   cn_topo     =  'bathymetry_CREG12_V3.3_REF09_20230801.nc'                  ! external topo file (nn_bathy =2)
    cn_bath     =  'Bathymetry'                 ! topo name in file  (nn_bathy =2)
    cn_lon      =  'nav_lon'                    ! lon  name in file  (nn_bathy =2)
    cn_lat      =  'nav_lat'                    ! lat  name in file  (nn_bathy =2)
