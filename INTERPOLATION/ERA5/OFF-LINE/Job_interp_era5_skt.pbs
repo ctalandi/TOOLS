@@ -1,0 +1,58 @@
+#!/bin/bash
+#PBS -q mpi_1
+#PBS -l select=1:ncpus=28:mpiprocs=28:mem=65G
+#PBS -l walltime=00:20:00
+#PBS -N ERA5skt<XXYEARXX>
+#PBS -o  ./OUT/ERA5skt<XXYEARXX>_%j.olog
+#PBS -e  ./OUT/ERA5skt<XXYEARXX>_%j.elog
+
+set -x
+
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+
+module purge
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+module list
+
+cd /home1/scratch/ctalandi/PREPOST/ERA5-CREG025.L75/WORK
+if [ ! -d <XXYEARXX> ] ; then mkdir <XXYEARXX> ; fi 
+cd <XXYEARXX>
+
+ln -sf /home/datawork-lops-drakkarcom/DATA-REFERENCE/ERA5-FORCING/SKIN-T/corrected_skt_<XXYEARXX>_era5.nc .
+ln -sf /home1/datawork/ctalandi/PRE-POST/FREDY/WEIGHTS/CREG025.L75/RESULT/data_nemo_era5_skt_CREG025.L75_bilin_20240912.nc .
+
+ln -sf /home1/datawork/ctalandi/PRE-POST/FREDY/WEIGHTS/CREG025.L75/OFF-LINE/NAM/namelist_bilin_era5_skt_y<XXYEARXX>  .
+
+############ ENV ############
+BINDIR=/home1/datahome/ctalandi/DEV/GITREP/DCM_4.2/DCMTOOLS/NEMOREF/NEMO4/tools/WEIGHTS
+set -xv
+#############################
+
+CONFIG=CREG025.L75
+#INTERP_TYPE=bicubic
+INTERP_TYPE=bilinear
+
+FORG=era5
+#FORG=dfs5.2
+
+# Interpolation type: bilin/bicub
+##################################
+SHORT_INTERP=$( echo $INTERP_TYPE | cut -c 1-5 )
+
+# SCRIP Weight file name 
+##################################
+SCRIP_WGTFILE=data_nemo_${SHORT_INTERP}_${CONFIG}.nc
+
+# NEMO Weight file name 
+##################################
+NEMO_WGTFILE=reshape_${CONFIG}_${INTERP_TYPE}.nc
+
+ulimit -S -s unlimited
+#gdb ${BINDIR}/scripgrid.exe 
+#valgrind --track-origins=yes --main-stacksize=150000000  --max-stackframe=12000000 ${BINDIR}/scripgrid.exe 
+
+time ${BINDIR}/scripinterp.exe namelist_${SHORT_INTERP}_${FORG}_skt_y<XXYEARXX>
+
+mv CREG025.L75_drowned_skt_ERA5_y<XXYEARXX>.nc ../../skt/.
+
