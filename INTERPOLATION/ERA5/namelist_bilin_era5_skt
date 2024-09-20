@@ -64,7 +64,7 @@
 &interp_inputs
     input_file = "corrected_skt_<XXYEARXX>_era5.nc"
     interp_file = "data_nemo_era5_skt_CREG025.L75_bilin_20240912.nc"
-    input_name = "skt_correct"
+    input_name = "skt_diff"
     input_start = 1,1,1,1
     input_stride = 1,1,1,1
     input_stop = 0,0,0,1
@@ -72,17 +72,17 @@
 /
 
 &interp_outputs
-    output_file = "CREG025.L75_drowned_skt_ERA5_y<XXYEARXX>.nc"
+    output_file = "CREG025.L75_drowned_skt_diff_ERA5_y<XXYEARXX>.nc"
     output_mode = "create"
     output_dims = 'x', 'y', 'time_counter'
-    output_scaling = "skt|1.0", "time_counter|1.0"
-    output_name = 'skt'
+    output_scaling = "skt_diff|1.0", "time_counter|1.0"
+    output_name = 'skt_diff'
     output_lon = 'longitude'
     output_lat = 'latitude'
     output_vars = 'time_counter'
     output_attributes = 'time_counter|units|hours ',
                         'time_counter|calendar|noleap',
-                        'skt|units|K'
+                        'skt_diff|units|K'
 /
 
 &comments
