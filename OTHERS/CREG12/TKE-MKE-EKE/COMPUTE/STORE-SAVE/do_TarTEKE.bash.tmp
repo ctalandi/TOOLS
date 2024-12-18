@@ -1,0 +1,30 @@
+#!/bin/bash
+#MSUB -r TarTEKE<XXFREQXX><XXMYYEAXX>
+#MSUB -n 8
+#MSUB -T <XXELAPSXX>
+#MSUB -q xlarge
+#MSUB -o ./OUT/TarTEKE_<XXFREQXX>_<XXMYYEAXX>.o%I
+#MSUB -e ./OUT/TarTEKE_<XXFREQXX>_<XXMYYEAXX>.e%I
+#MSUB -A gen7420
+#MSUB -m store,work,scratch
+set -xv 
+
+EXP=<XXMYEXPXX>
+CYEAR=<XXMYYEAXX>
+FREQ=<XXFREQXX>
+
+# Directories
+DATAIN=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/CREG12.L75-DIAGS/CREG12.L75-${EXP}/ENERGETICS
+DATAOU=/ccc/store/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}/DIAGS/ENERGETICS
+
+# For either daily or monthly fields
+####################################
+DATAOUFQ=${DATAOU}/${FREQ}/${CYEAR}
+if [ ! -d ${DATAOUFQ} ] ; then mkdir -p ${DATAOUFQ} ; fi
+
+if [ ${FREQ} == '5d' ]  ; then 
+	tar cvf ${DATAOUFQ}/CREG12.L75-${EXP}.${FREQ}_y${CYEAR}_TEKE.tar ${DATAIN}/${FREQ}/${CYEAR}/*/*.nc 
+else 
+	tar cvf ${DATAOUFQ}/CREG12.L75-${EXP}.${FREQ}_y${CYEAR}_TEKE.tar ${DATAIN}/${FREQ}/${CYEAR}/*.nc 
+fi
+

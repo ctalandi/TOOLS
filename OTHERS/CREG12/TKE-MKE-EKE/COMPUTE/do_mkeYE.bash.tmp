@@ -1,0 +1,47 @@
+#!/bin/bash
+#MSUB -r mkeYE<XXMYYEAXX>
+#MSUB -n 8
+#MSUB -T <XXELAPSXX>
+#MSUB -q xlarge
+#MSUB -o ./OUT/mkeYE<XXMYYEAXX>.o%I
+#MSUB -e ./OUT/mkeYE<XXMYYEAXX>.e%I
+#MSUB -A gen7420
+#MSUB -m store,work,scratch
+set -xv 
+
+EXP=<XXMYEXPXX>
+CYEAR=<XXMYYEAXX>
+
+# Directories
+# For yearly mean fields
+DATAIN=/ccc/scratch/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}-MEAN/${CYEAR}
+# For mean field gridT file for the header (no matter the month)
+DATAMO=/ccc/scratch/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}-MEAN/${CYEAR}
+# Location for outputs 
+DATAOU=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/CREG12.L75-DIAGS/CREG12.L75-${EXP}/ENERGETICS/1y/${CYEAR}
+
+
+if [ ! -d ${DATAOU} ] ; then mkdir -p ${DATAOU} ; fi
+
+MYWORK=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/DIAGS/ENERGETICS/${EXP}/WORK/${CYEAR}
+
+if [ ! -d ${MYWORK} ] ; then mkdir -p ${MYWORK} ; fi 
+cd ${MYWORK}
+
+ln -sf /ccc/work/cont003/gen7420/talandel/TOOLS/GIT-CDFTOOLS/bin/cdfene .
+
+#1 Make links to all input required files 
+##########################################
+# Make links to input annual mean fields files 
+# gridU gridV files
+for tfile in `echo gridU gridV `; do 
+    for ffile in `ls ${DATAIN}/CREG12.L75-${EXP}_y${CYEAR}.5d_${tfile}.nc `; do 
+        ln -sf ${ffile} .
+    done
+done 
+
+#2 Compute MKE
+##############
+time ./cdfene -u CREG12.L75-${EXP}_y${CYEAR}.5d_gridU.nc \
+              -v CREG12.L75-${EXP}_y${CYEAR}.5d_gridV.nc \
+              -t ${DATAMO}/CREG12.L75-${EXP}_y${CYEAR}m01.5d_gridT.nc  -mke -nc4 -o  ${DATAOU}/CREG12.L75-${EXP}_y${CYEAR}.1y_MKE.nc

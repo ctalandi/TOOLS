@@ -1,0 +1,58 @@
+#!/bin/bash
+#MSUB -r YearMean<XXMYYEAXX>
+#MSUB -n 8
+#MSUB -T <XXELAPSXX>
+#MSUB -q xlarge
+#MSUB -o ./OUT/YearMean<XXMYYEAXX>.o%I
+#MSUB -e ./OUT/YearMean<XXMYYEAXX>.e%I
+#MSUB -A gen7420
+#MSUB -m store,work,scratch
+set -xv 
+
+EXP=<XXMYEXPXX>
+CYEAR=<XXMYYEAXX>
+
+# Directories
+DATAIN=/ccc/scratch/cont003/gen7420/talandel/SEDNA/SEDNA-${EXP}-S/1m/${CYEAR}
+DATAOU=/ccc/scratch/cont003/gen7420/talandel/SEDNA/SEDNA-${EXP}-S/1y/${CYEAR}
+
+if [ ! -d ${DATAOU} ] ; then mkdir -p ${DATAOU} ; fi
+
+MYWORK=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/DIAGS/MEAN/${EXP}/WORK/${CYEAR}
+
+if [ ! -d ${MYWORK} ] ; then mkdir -p ${MYWORK}  ; fi 
+cd ${MYWORK}
+
+
+for grdfile in `echo gridU gridV `; do 
+
+	if [ ! -f ${grdfile} ] ; then mkdir ${grdfile} ; fi 
+	cd ${grdfile}
+	ln -sf /ccc/work/cont003/gen7420/talandel/TOOLS/GIT-CDFTOOLS/bin/cdfmoy .
+	echo " >>> Treat files ${grdfile} "
+
+	#1 Make the links towards the 12 monthly means 
+	##############################################
+	for mm in `seq -w 01 12`; do 
+	     ln -sf ${DATAIN}/${mm}/SEDNA-${EXP}_y${CYEAR}m${mm}.1m_${grdfile}.nc .
+	done
+	
+	# List all monthly files to use for the calculation of yearly mean velocity
+	taglistU=""  ; numU=0
+	for ff in `ls SEDNA-${EXP}_*.1m_${grdfile}.nc `; do 
+	    taglistU="$taglistU $ff"
+	    let numU=$numU+1
+	done
+	echo $taglistU 
+	echo 
+	echo " 		>>> Number of ${grdfile} files: $numU" 
+	
+	#2 Compute the yearly mean velocities
+	#########################################
+	if [ ! -f ${DATAOU}/SEDNA-${EXP}_y${CYEAR}.1y_${grdfile}.nc ] ; then 
+		time ./cdfmoy -l ${taglistU} -nc4 -nosqd   ;   
+		mv cdfmoy.nc  ${DATAOU}/SEDNA-${EXP}_y${CYEAR}.1y_${grdfile}.nc 
+	fi
+
+	cd ../ 
+done

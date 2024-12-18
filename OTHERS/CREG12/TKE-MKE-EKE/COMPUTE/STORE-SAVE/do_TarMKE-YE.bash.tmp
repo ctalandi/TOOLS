@@ -1,0 +1,29 @@
+#!/bin/bash
+#MSUB -r TarMKE<XXMSYEAXX><XXMEYEAXX>
+#MSUB -n 8
+#MSUB -T <XXELAPSXX>
+#MSUB -q xlarge
+#MSUB -o ./OUT/TarMKE<XXMSYEAXX><XXMEYEAXX>.o%I
+#MSUB -e ./OUT/TarMKE<XXMSYEAXX><XXMEYEAXX>.e%I
+#MSUB -A gen7420
+#MSUB -m store,work,scratch
+set -xv 
+
+EXP=<XXMYEXPXX>
+SYEAR=<XXMSYEAXX>
+EYEAR=<XXMEYEAXX>
+
+# Directories
+DATAIN=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/CREG12.L75-DIAGS/CREG12.L75-${EXP}/ENERGETICS/1y
+DATAOU=/ccc/store/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}/DIAGS/ENERGETICS/1y
+
+if [ ! -d ${DATAOU} ] ; then mkdir -p ${DATAOU} ; fi
+
+filelst=""
+for CYEAR in `seq -w ${SYEAR} ${EYEAR} ` ; do 
+
+	file=`ls ${DATAIN}/${CYEAR}/* `
+	filelst="$filelst $file" 
+done 
+
+tar cvf ${DATAOU}/CREG12.L75-${EXP}.1y_y${SYEAR}${EYEAR}_MKE.tar ${filelst}

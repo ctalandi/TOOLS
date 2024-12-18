@@ -1,0 +1,136 @@
+#!/bin/bash
+#MSUB -r tkeMO<XXMYYEAXX><XXMONTHXX>
+#MSUB -n 8
+#MSUB -T <XXELAPSXX>
+#MSUB -q xlarge
+#MSUB -o ./OUT/tkeMO<XXMYYEAXX><XXMONTHXX>.o%I
+#MSUB -e ./OUT/tkeMO<XXMYYEAXX><XXMONTHXX>.e%I
+#MSUB -A gen7420
+#MSUB -m store,work,scratch
+set -xv 
+
+EXP=<XXMYEXPXX>
+CYEAR=<XXMYYEAXX>
+ZMM="<XXMONTHXX>"
+
+ZMMM=`printf "%02d" $ZMM`
+YEARMONTH="y${CYEAR}m${ZMMM}"
+
+##########@##########@##########@##########@##########@##########@##########@##########@##########@
+# Set to 1 if TEKE to be computed at model frequency output
+inst_tke=1
+# Set to 1 to compute monthly mean of TEKE using either 5d or 1d TEKE fields
+mean_teke=1
+##########@##########@##########@##########@##########@##########@##########@##########@##########@
+
+# Directories
+# For instantaneous field
+DATAIN=/ccc/scratch/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}-S/5d/${CYEAR}
+# For mean field
+DATAME=/ccc/scratch/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}-MEAN/${CYEAR}
+# For mean field gridT file for the header (no matter the month)
+DATAMO=/ccc/scratch/cont003/gen7420/talandel/CREG12.L75/CREG12.L75-${EXP}-MEAN/${CYEAR}
+# Location for outputs 
+DATAOU=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/CREG12.L75-DIAGS/CREG12.L75-${EXP}/ENERGETICS/5d/${CYEAR}/${ZMMM}
+DATAOUMO=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/CREG12.L75-DIAGS/CREG12.L75-${EXP}/ENERGETICS/1m/${CYEAR}
+
+if [ ! -d ${DATAOU} ] ; then mkdir -p ${DATAOU} ; fi
+if [ ! -d ${DATAOUMO} ] ; then mkdir -p ${DATAOUMO} ; fi
+
+MYWORK=/ccc/scratch/cont003/gen7420/talandel/POSTREAT/DIAGS/ENERGETICS/${EXP}/WORK/${CYEAR}/${ZMMM}
+
+if [ ! -d ${MYWORK} ] ; then mkdir -p ${MYWORK} ; fi 
+cd ${MYWORK}
+
+ln -sf /ccc/work/cont003/gen7420/talandel/TOOLS/GIT-CDFTOOLS/bin/cdfene .
+ln -sf /ccc/work/cont003/gen7420/talandel/TOOLS/GIT-CDFTOOLS/bin/cdfmoy .
+#ln -sf /ccc/scratch/cont003/ra5563/talandel/SEDNA/SEDNA-I/SEDNA-BETA_mesh_mask_Tgt_20210820_tsh10m_L1.nc mesh_hgr.nc
+
+#1 Make links to all input required files 
+##########################################
+
+# Make links to input highest frequency fields files
+# gridU gridV files 
+for tfile in `echo gridU gridV `; do 
+    for ffile in `ls ${DATAIN}/CREG12.L75-${EXP}_y${CYEAR}m${ZMMM}d*.5d_${tfile}.nc `; do 
+        ln -sf ${ffile} .
+    done
+done 
+
+# Make links to input annual mean fields files 
+# gridU gridV files
+for tfile in `echo gridU gridV `; do 
+    for ffile in `ls ${DATAME}/CREG12.L75-${EXP}_y${CYEAR}.5d_${tfile}.nc `; do 
+        ln -sf ${ffile} .
+    done
+done 
+
+
+#2 List all daily files to use for the calculation of squared velocity monthly mean 
+########################################################################################
+
+taglistU=""  ; numU=0 ; datelist=""
+for ff in `ls CREG12.L75-${EXP}_y${CYEAR}m${ZMMM}d*.5d_gridU.nc `; do 
+    taglistU="$taglistU $ff"
+    yymmdd=`echo $ff | sed -e "s/CREG12.L75-${EXP}_//" -e "s/.5d_gridU.nc//" `
+    datelist="$datelist $yymmdd" 
+    let numU=$numU+1
+done
+echo $taglistU 
+echo 
+echo " >>> Number of gridU files: $numU" 
+
+taglistV="" ; numV=0
+for ff in `ls CREG12.L75-${EXP}_y${CYEAR}m${ZMMM}d*.5d_gridV.nc `; do 
+    taglistV="$taglistV $ff"
+    let numV=$numV+1
+done
+echo $taglistV
+echo 
+echo " >>> Number of gridV files: $numV" 
+
+if [ $numU -ne $numV  ] ; then 
+	echo "  ###################################################################" 
+	echo "  The number of gridU and gridV files is not identical, we stop there" 
+	echo "  ###################################################################" 
+	exit
+fi
+
+#datelist="y2015m01d24 y2015m01d25 y2015m01d26 y2015m01d27 y2015m01d28 y2015m01d29 y2015m01d30 y2015m01d31"
+#datelist="y2015m03d30 y2015m03d31"
+#datelist="y2015m04d30"
+#datelist="y2015m05d31"
+
+
+if [ ${inst_tke} -eq 1 ] ; then 
+
+	#3 Loop on each instantenous field to compute TKE, EKE 
+	######################################################
+	for ddate in `echo $datelist `; do
+		echo "         Current date treated: $ddate "
+		time ./cdfene -u CREG12.L75-${EXP}_${ddate}.5d_gridU.nc  -um CREG12.L75-${EXP}_y${CYEAR}.5d_gridU.nc \
+		              -v CREG12.L75-${EXP}_${ddate}.5d_gridV.nc  -vm CREG12.L75-${EXP}_y${CYEAR}.5d_gridV.nc \
+		              -t ${DATAMO}/CREG12.L75-${EXP}_y${CYEAR}m01.5d_gridT.nc  -tke -nc4 -o  ${DATAOU}/CREG12.L75-${EXP}_${ddate}.5d_TEKE.nc
+	done 
+
+fi
+
+if [ ${mean_teke} -eq 1 ] ; then 
+
+	#4 Perform a monthly mean of TKE and EKE 
+	#########################################
+	taglist="" ; num=0
+	for ff in `ls ${DATAOU}/CREG12.L75-${EXP}_*.5d_TEKE.nc `; do 
+	    ln -sf ${ff} .
+	    locfile=`basename $ff` 
+	    taglist="$taglist $locfile"
+	    let num=$num+1
+	done
+	echo $taglist
+	echo 
+	echo " >>> Number of TEKE files: $num" 
+	
+	time ./cdfmoy -l ${taglist} -nc4 -nosqd  ;   
+	mv cdfmoy.nc  ${DATAOUMO}/CREG12.L75-${EXP}_${YEARMONTH}.1m_TEKE.nc 
+
+fi
