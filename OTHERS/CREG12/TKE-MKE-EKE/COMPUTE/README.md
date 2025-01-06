@@ -9,6 +9,7 @@ All the following shell scripts, F90 code have been used on the ROME architectur
   - launch_tkeMO.bash & do_tkeMO.bash.tmp  > 5d mean EKE calculation and then monthly mean EKE. Anomalies are computed using annual mean of the considered year
 
   In the STORE-SAVE directory, scripts used to save results of the process above
+  ' 
      .
      ├── cdfene.f90 
      ├── do_mkeYE.bash.tmp 
@@ -22,7 +23,7 @@ All the following shell scripts, F90 code have been used on the ROME architectur
           ├── do_TarTEKE.bash.tmp 
           ├── launch_TarMKE-YE.bash 
           └── launch_TarTEKE.bash 
-
+  ' 
 
 ---
 ## CREG12.L75-REF08 dat location on the TGCC Store area
