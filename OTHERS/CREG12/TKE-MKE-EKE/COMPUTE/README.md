@@ -9,24 +9,24 @@ All the following shell scripts, F90 code have been used on the ROME architectur
   - launch_tkeMO.bash & do_tkeMO.bash.tmp  > 5d mean EKE calculation and then monthly mean EKE. Anomalies are computed using annual mean of the considered year
 
   In the STORE-SAVE directory, scripts used to save results of the process above
-  ' 
-     .
-     ├── cdfene.f90 
-     ├── do_mkeYE.bash.tmp 
-     ├── do_tkeMO.bash.tmp 
-     ├── do_YearMean.bash.tmp 
-     ├── launch_mkeYE.bash 
-     ├── launch_tkeMO.bash 
-     ├── launch_YearMean.bash 
-     └── STORE-SAVE 
-          ├── do_TarMKE-YE.bash.tmp 
-          ├── do_TarTEKE.bash.tmp 
-          ├── launch_TarMKE-YE.bash 
-          └── launch_TarTEKE.bash 
-  ' 
+  > 
+  >  .
+  >  ├── cdfene.f90 
+  >  ├── do_mkeYE.bash.tmp 
+  >  ├── do_tkeMO.bash.tmp 
+  >  ├── do_YearMean.bash.tmp 
+  >  ├── launch_mkeYE.bash 
+  >  ├── launch_tkeMO.bash 
+  >  ├── launch_YearMean.bash 
+  >  └── STORE-SAVE 
+  >       ├── do_TarMKE-YE.bash.tmp 
+  >       ├── do_TarTEKE.bash.tmp 
+  >       ├── launch_TarMKE-YE.bash 
+  >       └── launch_TarTEKE.bash 
+  > 
 
 ---
-## CREG12.L75-REF08 dat location on the TGCC Store area
+## CREG12.L75-REF08 data location the TGCC's Store area
 
 As a reminder the location of all REF08 data experiemnts: 
 
