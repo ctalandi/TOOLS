@@ -2,3 +2,5 @@
 >
 >  This step has been done on Kara /home/ctalandi/TOOLS/EOS80_2_EOS10 using the phyocean kernel available which includes the GSW package<br>
 
+> Note that the Matlab script, has been used on Zemlya using the GSW package installed there /data0/project/drakkar/USERS/ctalandi/MISCE/GSW-MATLAB_v3_06_16/
+
