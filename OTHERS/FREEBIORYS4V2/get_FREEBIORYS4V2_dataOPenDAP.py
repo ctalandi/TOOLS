@@ -39,7 +39,7 @@ for dom_extra in lst_dom:
         print(datapgn)
         
         if dom_extra['AREA'] == 'ORCA025' : 
-            for mm in np.arange(10)+3:
+            for mm in np.arange(2)+11:
             #for mm in np.arange(12)+1:
                 if mm <= 9 : 
                     lmm="0"+str(mm)
@@ -47,7 +47,7 @@ for dom_extra in lst_dom:
                     lmm=str(mm)
 
                 dmax=31 ;
-                if mm == 4 or mm == 6 or mm == 9 or mm == 30 : dmax=30 ;
+                if mm == 4 or mm == 6 or mm == 9 or mm == 11 : dmax=30 ;
                 if mm == 2 : dmax=28
 
                 #GOOD ldate = pd.date_range(start=str(my_year)+"0101",end=str(my_year)+"0131",freq="M")
