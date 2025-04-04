@@ -6,3 +6,4 @@ TOGET/*
 *.pyf
 TRAINING/*.nc 
 TRAINING/*.so
+.ipynb_checkpoints
