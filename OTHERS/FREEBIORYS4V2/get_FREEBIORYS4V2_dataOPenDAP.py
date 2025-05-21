@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-my_year=1993
+my_year=1995
 CONFIG='FREEBIORYS2V4'
 
 # Define all areas
@@ -13,16 +13,16 @@ area_subtro={'AREA':'SUBTROPGYRE', 'lon_min' : -85., 'lon_max': -5.,'lat_min': 2
 area_foldcr={'AREA':'FOLD-CREG025', 'lon_min' : -180., 'lon_max': +180.,'lat_min': 23., 'lat_max': 90.} 
 area_orca25={'AREA':'ORCA025', 'lon_min' : 0., 'lon_max': 0.,'lat_min': 0., 'lat_max': 0.} 
 
-#bgcvar_lst=['alk', 'bfe', 'bgc2D', 'caco3', 'chl', 'dchl', 'dfe', 'dic', 'doc', 'dsi', 'fe', 'goc', 'gsi', \
-#           'nchl', 'nfe', 'nh4', 'no3', 'nppv', 'o2', 'par', 'ph', 'phy2', 'phyc', 'phy', 'po4', 'poc', 'sfe', 'si', 'zoo2', 'zoo']
+# The bgc2D file is not available and leads to a systematic error BUT we do not need it 
+#init bgcvar_lst=['alk', 'bfe', 'caco3', 'chl', 'dchl', 'dfe', 'dic', 'doc', 'dsi', 'fe', 'goc', 'gsi', \
+#init            'nchl', 'nfe', 'nh4', 'no3', 'nppv', 'o2', 'par', 'ph', 'phy2', 'phyc', 'phy', 'po4', 'poc', 'sfe', 'si', 'zoo2', 'zoo']
 
-#bgcvar_lst=['alk', 'bfe', 'caco3', 'chl', 'dchl', 'dfe', 'dic', 'doc', 'dsi', 'fe', 'goc', 'gsi', \
-#           'nchl', 'nfe', 'nh4', 'no3', 'nppv', 'o2', 'par', 'phy2', 'phyc', 'phy', 'po4', 'poc', 'sfe', 'si', 'zoo2', 'zoo']
+bgcvar_lst=['caco3', 'chl', 'dchl', 'dfe', 'dic', 'doc', 'dsi', 'fe', 'goc', 'gsi', \
+           'nchl', 'nfe', 'nh4', 'no3', 'nppv', 'o2', 'par', 'ph', 'phy2', 'phyc', 'phy', 'po4', 'poc', 'sfe', 'si', 'zoo2', 'zoo']
 
-bgcvar_lst=[ 'chl']
 
-#lst_dom=[area_bering,area_subtro]
-lst_dom=[area_orca25]
+lst_dom=[area_bering,area_subtro]
+#lst_dom=[area_orca25]
 
 # Loop on the area 
 for dom_extra in lst_dom: 
@@ -39,8 +39,8 @@ for dom_extra in lst_dom:
         print(datapgn)
         
         if dom_extra['AREA'] == 'ORCA025' : 
-            for mm in np.arange(2)+11:
-            #for mm in np.arange(12)+1:
+            #for mm in np.arange(2)+11:
+            for mm in np.arange(12)+1:
                 if mm <= 9 : 
                     lmm="0"+str(mm)
                 else:
@@ -66,6 +66,7 @@ for dom_extra in lst_dom:
             xmax = max(geoindex[:,1])
             ymin = min(geoindex[:,0])
             ymax = max(geoindex[:,0])
+            ldate = pd.date_range(start=str(my_year)+'0131',end=str(my_year)+'1231',freq="M") # all monday between start and end
             extra_data = datapgn.isel({'x':slice(xmin,xmax),'y':slice(ymin,ymax)}).sel({'time_counter':ldate},method="nearest")
             file_out=CONFIG+'_'+dom_extra['AREA']+'_1m_y'+str(my_year)+'_'+var+'.nc'
         
