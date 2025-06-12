@@ -16,7 +16,8 @@ area_orca25={'AREA':'ORCA025', 'lon_min' : 0., 'lon_max': 0.,'lat_min': 0., 'lat
 #init bgcvar_lst=['alk', 'bfe', 'caco3', 'chl', 'dchl', 'dfe', 'dic', 'doc', 'dsi', 'fe', 'goc', 'gsi', \
 #init            'nchl', 'nfe', 'nh4', 'no3', 'nppv', 'o2', 'par', 'ph', 'phy2', 'phyc', 'phy', 'po4', 'poc', 'sfe', 'si', 'zoo2', 'zoo']
 
-bgcvar_lst=['fe', 'si', 'po4', 'dic', 'o2', 'no3', 'doc', 'fe'] 
+#bgcvar_lst=['si', 'po4', 'dic', 'o2', 'no3', 'doc', 'fe', 'alk'] 
+bgcvar_lst=['alk'] 
 
 #lst_dom=[area_bering,area_subtro]
 lst_dom=[area_orca25]
