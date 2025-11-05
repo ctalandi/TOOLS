@@ -1,0 +1,60 @@
+#!/bin/bash
+#PBS -q mpi_1
+#PBS -l select=1:ncpus=28:mpiprocs=28:mem=65G
+#PBS -l walltime=00:20:00
+#PBS -N JRA5Seas<XXMONTHXX>
+#PBS -o  ./OUT/JRA5Seas<XXMONTHXX>_%j.olog
+#PBS -e  ./OUT/JRA5Seas<XXMONTHXX>_%j.elog
+
+set -x
+
+ulimit -s unlimited
+source /usr/share/Modules/3.2.10/init/bash
+
+module purge
+module load NETCDF-test/4.3.3.1-mpt217-intel2018
+module list
+
+cd /home1/scratch/ctalandi/PREPOST/JRA5-CREG025.L75/WORK
+if [ ! -d <XXMONTHXX> ] ; then mkdir <XXMONTHXX> ; fi 
+cd <XXMONTHXX>
+
+ln -sf /home/datawork-lops-drakkarcom/DATA-REFERENCE/JRA55do_anomaly/2m_temperature-<XXMONTHXX>_LY.nc .
+#ln -sf /home/datawork-lops-drakkarcom/DATA-REFERENCE/JRA55do_anomaly/2m_temperature-<XXMONTHXX>.nc .
+ln -sf /home1/datawork/ctalandi/PRE-POST/FREDY/WEIGHTS/CREG025.L75/RESULT/data_nemo_jra5Seas_CREG025.L75_bilin_20250130.nc .
+
+ln -sf /home1/datawork/ctalandi/PRE-POST/FREDY/WEIGHTS/CREG025.L75/OFF-LINE/NAM/namelist_bilin_jra5Seas_m<XXMONTHXX> .
+
+############ ENV ############
+BINDIR=/home1/datahome/ctalandi/DEV/GITREP/DCM_4.2/DCMTOOLS/NEMOREF/NEMO4/tools/WEIGHTS
+set -xv
+#############################
+
+CONFIG=CREG025.L75
+#INTERP_TYPE=bicubic
+INTERP_TYPE=bilinear
+
+FORG=jra5Seas
+#FORG=dfs5.2
+
+# Interpolation type: bilin/bicub
+##################################
+SHORT_INTERP=$( echo $INTERP_TYPE | cut -c 1-5 )
+
+# SCRIP Weight file name 
+##################################
+SCRIP_WGTFILE=data_nemo_${SHORT_INTERP}_${CONFIG}.nc
+
+# NEMO Weight file name 
+##################################
+NEMO_WGTFILE=reshape_${CONFIG}_${INTERP_TYPE}.nc
+
+ulimit -S -s unlimited
+#gdb ${BINDIR}/scripgrid.exe 
+#valgrind --track-origins=yes --main-stacksize=150000000  --max-stackframe=12000000 ${BINDIR}/scripgrid.exe 
+
+time ${BINDIR}/scripinterp.exe namelist_${SHORT_INTERP}_${FORG}_m<XXMONTHXX>
+
+mv CREG025.L75_t2_jra5Seas_m<XXMONTHXX>_LY.nc  ../../SEAS/CREG025.L75_t2_ERA5-JRA5Seas_m<XXMONTHXX>_LY.nc 
+#mv CREG025.L75_t2_jra5Seas_m<XXMONTHXX>.nc  ../../SEAS/CREG025.L75_t2_ERA5-JRA5Seas_m<XXMONTHXX>.nc 
+
